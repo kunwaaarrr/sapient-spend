@@ -113,6 +113,28 @@ document.getElementById('tabbar').onclick = e => {
   else navigate(go[btn.dataset.tab]);
 };
 
+// ---------- keep popovers inside the viewport ----------
+// menus anchor to their trigger and can bleed past the phone's right edge; nudge them back
+function clampPopover(el) {
+  el.style.marginLeft = '';
+  const r = el.getBoundingClientRect();
+  if (!r.width) return;
+  const over = r.right - (innerWidth - 8);
+  if (over > 0) el.style.marginLeft = -Math.round(Math.min(over, Math.max(0, r.left - 8))) + 'px';
+  else if (r.left < 8) el.style.marginLeft = Math.round(8 - r.left) + 'px';
+}
+new MutationObserver(muts => {
+  for (const m of muts) {
+    const candidates = m.type === 'childList'
+      ? [...m.addedNodes].filter(n => n.nodeType === 1)
+          .flatMap(n => [n, ...(n.querySelectorAll ? [...n.querySelectorAll('[class*="popover"],[class*="menu"]:not(nav)')] : [])])
+      : [m.target];
+    for (const el of candidates) {
+      if (el.nodeType === 1 && !el.hidden && /popover|menu/.test(el.className) && el.id !== 'sidebar-nav') clampPopover(el);
+    }
+  }
+}).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['hidden'] });
+
 // ---------- sidebar resize + collapse (UI chrome pref, plain localStorage) ----------
 const layout = document.getElementById('layout');
 const savedW = parseInt(localStorage.getItem('ss-sidebar-w'), 10);

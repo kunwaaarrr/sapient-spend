@@ -69,7 +69,8 @@ a { color: inherit; text-decoration: none; }
 
 /* ================= layout ================= */
 #layout { display: flex; height: 100vh; height: 100dvh; }
-#view { flex: 1; overflow-y: auto; background: var(--bg); outline: none; }
+#view { flex: 1; overflow-y: auto; overflow-x: hidden; background: var(--bg); outline: none; }
+html, body { overflow-x: hidden; } /* popovers must never widen the page into a horizontal scroll */
 
 /* ================= sidebar (resizable via drag handle, collapsible) ================= */
 #sidebar {
