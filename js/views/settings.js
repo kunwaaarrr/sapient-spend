@@ -98,6 +98,6 @@ export function render(root, params) {
     if (!confirm('Reset ALL data? This cannot be undone.')) return;
     if (!confirm('Really reset everything? Your entire budget will be permanently deleted.')) return;
     store.resetAll();
-    navigate('#/budget/' + thisMonth());
+    location.reload();
   };
 }

@@ -25,6 +25,7 @@ function emptyState() {
   };
 }
 
+const isFirstRun = !hasLS || localStorage.getItem(KEY) == null;
 let state = load() || emptyState();
 
 function load() {
@@ -32,10 +33,11 @@ function load() {
   try { const raw = localStorage.getItem(KEY); return raw ? JSON.parse(raw) : null; }
   catch { return null; }
 }
-const persist = debounce(() => {
+function persistNow() {
   if (!hasLS) return;
   try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {}
-}, 300);
+}
+const persist = debounce(persistNow, 300);
 
 // ---------- subscribers / undo / cache ----------
 const subs = new Set();
@@ -888,8 +890,9 @@ export const store = {
   netWorthSeries, spendingBreakdown, incomeVsExpense, ageOfMoneySeries, loanStats,
 
   // settings / data
+  isFirstRun,
   updateSettings: mutate(patch => { Object.assign(state.settings, patch); }),
   exportJSON() { return JSON.stringify(state, null, 2); },
   importJSON: mutate(text => { state = JSON.parse(text); }),
-  resetAll: mutate(() => { state = emptyState(); }),
+  resetAll: mutate(() => { state = emptyState(); persistNow(); }),
 };

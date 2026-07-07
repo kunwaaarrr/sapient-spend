@@ -262,8 +262,7 @@ function buildDemo() {
 }
 
 export function maybeSeed() {
-  const s = store.state;
-  if (s.accounts.length || s.transactions.length) return false;
+  if (!store.isFirstRun) return false;
   rnd = mulberry32(0x5A9E71); // reset PRNG for determinism
   store.importJSON(JSON.stringify(buildDemo()));
   return true;
