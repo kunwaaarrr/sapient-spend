@@ -4,7 +4,12 @@ import { fmt, fmtExact, parseAmount, todayISO, fmtDate, h, esc, debounce, addMon
 import { simulateBankFeed } from '../seed.js';
 
 const FLAGS = ['red', 'orange', 'yellow', 'green', 'blue', 'purple'];
-const FREQ_LABEL = { weekly: 'Weekly', fortnightly: 'Fortnightly', monthly: 'Monthly', yearly: 'Yearly' };
+const FREQ_LABEL = {
+  weekly: 'Weekly', fortnightly: 'Fortnightly', monthly: 'Monthly',
+  every2months: 'Every 2 Months', quarterly: 'Every 3 Months', twiceayear: 'Every 6 Months',
+  yearly: 'Yearly',
+};
+const FREQ_MONTHS = { monthly: 1, every2months: 2, quarterly: 3, twiceayear: 6, yearly: 12 };
 const TYPE_LABEL = {
   checking: 'Checking', savings: 'Savings', cash: 'Cash', creditCard: 'Credit Card',
   mortgage: 'Mortgage', autoLoan: 'Auto Loan', studentLoan: 'Student Loan', personalLoan: 'Personal Loan',
@@ -302,12 +307,18 @@ function wireScheduled(root, accountId) {
 }
 
 function advanceDate(dateStr, frequency) {
-  const d = new Date(dateStr + 'T00:00:00');
-  if (frequency === 'weekly') d.setDate(d.getDate() + 7);
-  else if (frequency === 'fortnightly') d.setDate(d.getDate() + 14);
-  else if (frequency === 'yearly') d.setFullYear(d.getFullYear() + 1);
-  else d.setMonth(d.getMonth() + 1);
-  return d.toISOString().slice(0, 10);
+  if (frequency === 'weekly' || frequency === 'fortnightly') {
+    const d = new Date(dateStr + 'T00:00:00');
+    d.setDate(d.getDate() + (frequency === 'weekly' ? 7 : 14));
+    return d.toISOString().slice(0, 10);
+  }
+  const months = FREQ_MONTHS[frequency] || 1; // default: monthly (matches prior fallback behavior)
+  const [y, m, day] = dateStr.split('-').map(Number);
+  const total = (m - 1) + months;
+  const ny = y + Math.floor(total / 12);
+  const nmZero = total % 12;
+  const clamped = Math.min(day, new Date(ny, nmZero + 1, 0).getDate());
+  return `${ny}-${String(nmZero + 1).padStart(2, '0')}-${String(clamped).padStart(2, '0')}`;
 }
 
 function openScheduledEditModal(s) {
@@ -723,6 +734,9 @@ function renderDatePopover(dateStr) {
         <option value="weekly" ${repeatChoice === 'weekly' ? 'selected' : ''}>Weekly</option>
         <option value="fortnightly" ${repeatChoice === 'fortnightly' ? 'selected' : ''}>Fortnightly</option>
         <option value="monthly" ${repeatChoice === 'monthly' ? 'selected' : ''}>Monthly</option>
+        <option value="every2months" ${repeatChoice === 'every2months' ? 'selected' : ''}>Every 2 Months</option>
+        <option value="quarterly" ${repeatChoice === 'quarterly' ? 'selected' : ''}>Every 3 Months</option>
+        <option value="twiceayear" ${repeatChoice === 'twiceayear' ? 'selected' : ''}>Every 6 Months</option>
         <option value="yearly" ${repeatChoice === 'yearly' ? 'selected' : ''}>Yearly</option>
       </select>
     </div>
@@ -1257,6 +1271,9 @@ export function openAddTransactionModal(presetAccountId, editTxId) {
           <option value="weekly" ${recurring === 'weekly' ? 'selected' : ''}>Weekly</option>
           <option value="fortnightly" ${recurring === 'fortnightly' ? 'selected' : ''}>Fortnightly</option>
           <option value="monthly" ${recurring === 'monthly' ? 'selected' : ''}>Monthly</option>
+          <option value="every2months" ${recurring === 'every2months' ? 'selected' : ''}>Every 2 Months</option>
+          <option value="quarterly" ${recurring === 'quarterly' ? 'selected' : ''}>Every 3 Months</option>
+          <option value="twiceayear" ${recurring === 'twiceayear' ? 'selected' : ''}>Every 6 Months</option>
           <option value="yearly" ${recurring === 'yearly' ? 'selected' : ''}>Yearly</option>
         </select>
       </span>

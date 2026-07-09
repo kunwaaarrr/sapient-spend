@@ -135,7 +135,8 @@
   letter-spacing: .6px; text-transform: uppercase; color: var(--text-2); padding: 0 14px; height: 40px; border-bottom: 1px solid var(--line); z-index: 5;
 }
 .budget-table thead th.chk-cell { padding: 0 0 0 14px; }
-.budget-table thead th:nth-child(2) { text-align: left; }
+/* CATEGORY label: 3rd header cell (after chevron + checkbox), left-aligned over the names */
+.budget-table thead th:nth-child(3) { text-align: left; }
 .budget-table td { padding: 0 14px; border-bottom: 1px solid var(--line-subtle); vertical-align: middle; }
 .budget-table td.num { text-align: right; }
 .chk-cell { width: 24px; padding: 0 4px 0 0 !important; }
