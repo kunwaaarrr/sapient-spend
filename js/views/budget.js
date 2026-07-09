@@ -1,5 +1,5 @@
 import { store } from '../store.js';
-import { openModal, closeModal, toast } from '../app.js';
+import { openModal, closeModal, toast, navigate } from '../app.js';
 import { fmt, fmtExact, parseAmount, addMonths, monthLabel, h, ICONS } from '../util.js';
 import { CATEGORY_TEMPLATES } from '../seed.js';
 
@@ -479,6 +479,7 @@ function inspector(md) {
 export function render(root, { month }) {
   curMonth = month;
   const md = store.monthData(month);
+  if (isMobile()) { renderMobile(root, md); return; }
   const view = activeFocusedViewId ? store.state.focusedViews.find(v => v.id === activeFocusedViewId) : null;
   const filterIds = view ? new Set(view.categoryIds) : null;
   const allVisibleIds = md.groups.flatMap(g => (filterIds ? g.categories.filter(c => filterIds.has(c.id)) : g.categories).filter(passesFilter)).map(c => c.id);
@@ -709,6 +710,15 @@ function wireEvents(root, md) {
       case 'clear-focused-view':
         activeFocusedViewId = null;
         render(root, { month: curMonth });
+        break;
+      case 'open-views':
+        openViewsSheet(root, md);
+        break;
+      case 'open-edit-plan':
+        openEditPlanSheet(root, md);
+        break;
+      case 'open-overflow':
+        openOverflowSheet(root, md);
         break;
       case 'toggle-summary':
         summaryOpen = !summaryOpen; render(root, { month: curMonth });
@@ -1069,6 +1079,247 @@ function showDropIndicator(tr, clientY) {
 }
 function hideDropIndicator(tr) {
   tr.classList.remove('drop-above', 'drop-below');
+}
+
+// ================= mobile Plan view (YNAB parity) =================
+const M_ICONS = {
+  chevDown: `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 9.5l5.5 5.5 5.5-5.5"/></svg>`,
+  chevRight: `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 6l6 6-6 6"/></svg>`,
+  views: `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9.3"/><path d="M6.8 9.3h10.4M8.4 12.3h7.2M10.4 15.3h3.2"/></svg>`,
+  pencil: `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 21h15"/><path d="M14.6 4.9l4.4 4.4-9.3 9.3-4.9 1 1-4.9 8.8-8.8z"/></svg>`,
+  dots: `<svg class="ico" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="4.6" r="1.95"/><circle cx="12" cy="12" r="1.95"/><circle cx="12" cy="19.4" r="1.95"/></svg>`,
+  plusCircle: `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>`,
+};
+function progressBarsOn() { return store.state.settings.progressBars !== false; }
+
+function mobileCoverBanner(md) {
+  const over = overspentCats(md);
+  if (!over.length) return '';
+  const n = over.length;
+  return h`<div class="cover-banner m-cover">
+    <span class="cover-count">${String(n)}</span>
+    <span class="cover-text">Overspent categor${n === 1 ? 'y' : 'ies'}</span>
+    <button class="btn subtle sm cover-btn" data-act="cover">Cover</button>
+  </div>`;
+}
+
+function mRtaBanner(rta, md) {
+  const cls = rta > 0 ? 'pos' : rta < 0 ? 'neg' : 'zero';
+  const label = rta > 0 ? 'Ready to Assign' : rta < 0 ? 'You Assigned Too Much' : 'All Money Assigned';
+  return h`<div class="assign-wrap m-rta-wrap">
+    <button class="m-rta ${cls}" data-act="toggle-assign-pop">
+      <span class="m-rta-amt">${fmt(Math.abs(rta))}</span>
+      <span class="m-rta-label">${label} <span class="m-rta-chev">${[M_ICONS.chevRight]}</span></span>
+    </button>
+    ${assignPopover(md)}
+  </div>`;
+}
+
+function mGroupHeader(g, bars) {
+  const collapsed = collapsedGroups.has(g.id);
+  const totals = g.categories.reduce((s, c) => ({ assigned: s.assigned + c.assigned, available: s.available + c.available }), { assigned: 0, available: 0 });
+  const right = bars
+    ? h`<div class="m-avail-label">Available<br>to Spend</div>`
+    : h`<div class="m-col"><span class="m-col-label">Assigned</span><span class="m-col-amt">${fmt(totals.assigned)}</span></div>
+        <div class="m-col"><span class="m-col-label">Available</span><span class="m-col-amt">${fmt(totals.available)}</span></div>`;
+  return h`<div class="m-group ${collapsed ? 'collapsed' : ''}" data-act="toggle-group" data-id="${g.id}">
+    <span class="m-group-chev">${collapsed ? [M_ICONS.chevRight] : [M_ICONS.chevDown]}</span>
+    <span class="m-group-name">${g.name}${g.hidden ? ' <span class="muted">(hidden)</span>' : ''}</span>
+    ${right}
+  </div>`;
+}
+
+function mCatRow(c, bars) {
+  const pill = h`<span class="pill ${c.pillClass}">${fmt(c.available)}</span>`;
+  if (!bars) {
+    return h`<div class="m-cat m-cat-flat" data-act="open-cat" data-id="${c.id}">
+      <span class="m-cat-name">${c.name}${c.target?.snoozed ? ' 💤' : ''}</span>
+      <span class="m-col m-cat-assigned">${fmt(c.assigned)}</span>
+      <span class="m-col m-cat-avail" data-act="open-move" data-id="${c.id}">${[pill]}</span>
+    </div>`;
+  }
+  const pct = c.goal ? c.goal.fundedPct : 0;
+  const overspent = c.available < 0;
+  const spent = Math.max(0, -c.activity);
+  return h`<div class="m-cat m-cat-bars" data-act="open-cat" data-id="${c.id}">
+    <div class="m-cat-top">
+      <span class="m-cat-name">${c.name}${c.target?.snoozed ? ' 💤' : ''}</span>
+      <span class="m-cat-avail" data-act="open-move" data-id="${c.id}">${[pill]}</span>
+    </div>
+    <div class="m-bar"><div class="m-bar-fill ${fundBarClass(c)}" style="width:${Math.max(0, Math.min(100, pct))}%"></div></div>
+    ${overspent ? h`<div class="m-overspent-note">Overspent. ${fmt(spent)} of ${fmt(c.assigned)}</div>` : ''}
+  </div>`;
+}
+
+function renderMobile(root, md) {
+  const bars = progressBarsOn();
+  const view = activeFocusedViewId ? store.state.focusedViews.find(v => v.id === activeFocusedViewId) : null;
+  const filterIds = view ? new Set(view.categoryIds) : null;
+  const list = md.groups.map(g => {
+    const collapsed = collapsedGroups.has(g.id);
+    let cats = filterIds ? g.categories.filter(c => filterIds.has(c.id)) : g.categories;
+    cats = cats.filter(passesFilter);
+    if (!cats.length) return '';
+    return mGroupHeader(g, bars) + (collapsed ? '' : cats.map(c => mCatRow(c, bars)).join(''));
+  }).join('');
+
+  root.innerHTML = h`<div class="budget-view budget-mobile bars-${bars ? 'on' : 'off'}">
+    <div class="m-head">
+      <div class="month-picker-wrap m-month-wrap">
+        <button class="m-month" data-act="toggle-month-picker">${shortMonth(curMonth)}<span class="m-month-chev">${[M_ICONS.chevDown]}</span></button>
+        ${monthPickerPopover(curMonth)}
+      </div>
+      <div class="m-head-actions">
+        <button class="m-icon ${activeFilter !== 'all' || activeFocusedViewId ? 'on' : ''}" data-act="open-views" aria-label="Views">${[M_ICONS.views]}</button>
+        <button class="m-icon" data-act="open-edit-plan" aria-label="Edit plan">${[M_ICONS.pencil]}</button>
+        <button class="m-icon" data-act="open-overflow" aria-label="More">${[M_ICONS.dots]}</button>
+      </div>
+    </div>
+    ${[mRtaBanner(md.rta, md)]}
+    ${[mobileCoverBanner(md)]}
+    <div class="m-list">${list}</div>
+  </div>`;
+
+  wireEvents(root, md);
+}
+
+// ---------- Views sheet (screen 03) ----------
+function openViewsSheet(root, md) {
+  const filters = [['all', 'All'], ['underfunded', 'Underfunded'], ['overfunded', 'Overfunded'], ['available', 'Money Available'], ['snoozed', 'Snoozed']];
+  const fvs = store.state.focusedViews;
+  const row = (kind, id, label, on) => h`<button class="m-view-row ${on ? 'active' : ''}" data-act="pick-view" data-kind="${kind}" data-id="${id}">
+    <span class="m-radio ${on ? 'on' : ''}"></span><span class="m-view-label">${label}</span></button>`;
+  const rows = filters.map(([id, label]) => row('filter', id, label, !activeFocusedViewId && activeFilter === id)).join('')
+    + fvs.map(v => row('fv', v.id, v.name, activeFocusedViewId === v.id)).join('');
+  const sheet = openModal(h`<div class="sheet-handle"></div>
+    <h2 class="sheet-title">Views</h2>
+    <div class="m-views-btns">
+      <button class="m-views-btn" data-act="views-edit">${[M_ICONS.pencil]} Edit</button>
+      <button class="m-views-btn" data-act="views-new">${[M_ICONS.plusCircle]} New</button>
+    </div>
+    <div class="m-views-list">${rows}</div>`);
+  sheet.classList.add('bottom-sheet', 'ss-sheet');
+  sheet.onclick = e => {
+    const act = e.target.closest('[data-act]');
+    if (!act) return;
+    switch (act.dataset.act) {
+      case 'pick-view':
+        if (act.dataset.kind === 'fv') { activeFocusedViewId = act.dataset.id; }
+        else { activeFilter = act.dataset.id; activeFocusedViewId = null; }
+        closeModal(); render(root, { month: curMonth });
+        break;
+      case 'views-new':
+        closeModal(); openNewFocusedViewModal(root, md);
+        break;
+      case 'views-edit':
+        openEditViewsSheet(root, md);
+        break;
+    }
+  };
+}
+
+function openEditViewsSheet(root, md) {
+  const fvs = store.state.focusedViews;
+  const rows = fvs.length
+    ? fvs.map(v => h`<div class="m-menu-row"><span class="m-menu-label">${v.name}</span>
+        <button class="link-btn danger-text" data-act="del-fv" data-id="${v.id}">Delete</button></div>`).join('')
+    : `<p class="muted" style="padding:8px 2px">No saved views yet. Tap New to create one.</p>`;
+  const sheet = openModal(h`<div class="sheet-handle"></div><h2 class="sheet-title">Edit Views</h2>
+    <div class="m-menu">${rows}</div>`);
+  sheet.classList.add('bottom-sheet', 'ss-sheet');
+  sheet.onclick = e => {
+    const act = e.target.closest('[data-act]');
+    if (act?.dataset.act === 'del-fv') {
+      if (activeFocusedViewId === act.dataset.id) activeFocusedViewId = null;
+      store.deleteFocusedView(act.dataset.id);
+      closeModal(); render(root, { month: curMonth });
+    }
+  };
+}
+
+// ---------- Edit Plan sheet (pencil) ----------
+function openEditPlanSheet(root, md) {
+  const groups = md.groups.map(g => h`<div class="m-menu-row">
+    <span class="m-menu-label">${g.name}</span>
+    <button class="m-plan-add" data-act="plan-add-cat" data-id="${g.id}" aria-label="Add category">${[M_ICONS.plusCircle]}</button>
+  </div>`).join('');
+  const sheet = openModal(h`<div class="sheet-handle"></div><h2 class="sheet-title">Edit Plan</h2>
+    <button class="btn subtle m-plan-newgroup" data-act="plan-new-group">${[M_ICONS.plusCircle]} Add Category Group</button>
+    <div class="sheet-section-label">Category Groups</div>
+    <div class="m-menu">${groups}</div>`);
+  sheet.classList.add('bottom-sheet', 'ss-sheet');
+  sheet.onclick = e => {
+    const act = e.target.closest('[data-act]');
+    if (!act) return;
+    if (act.dataset.act === 'plan-new-group') {
+      const name = prompt('New group name:');
+      if (name && name.trim()) { store.addGroup(name.trim()); closeModal(); }
+    } else if (act.dataset.act === 'plan-add-cat') {
+      const name = prompt('New category name:');
+      if (name && name.trim()) { store.addCategory(act.dataset.id, name.trim()); closeModal(); }
+    }
+  };
+}
+
+// ---------- Overflow (three-dot) sheet ----------
+function openOverflowSheet(root, md) {
+  const bars = progressBarsOn();
+  const hideOn = store.state.settings.hideAmounts;
+  const allCollapsed = collapsedGroups.size > 0;
+  const item = (act, label, extra = '') => h`<button class="m-menu-item" data-act="${act}">
+    <span class="m-menu-label">${label}</span>${extra}</button>`;
+  const check = on => on ? `<span class="m-check">✓</span>` : '';
+  const sheet = openModal(h`<div class="sheet-handle"></div>
+    <div class="m-menu m-overflow">
+      ${item('ov-recent', 'Recent Moves')}
+      <button class="m-menu-item" data-act="ov-undo" ${store.canUndo() ? '' : 'disabled'}><span class="m-menu-label">Undo Assignment/Move</span></button>
+      ${item('ov-redo', 'Redo')}
+      <div class="m-menu-div"></div>
+      ${item('ov-add-group', 'Add Category Group')}
+      ${item('ov-progress', 'Progress Bars', check(bars))}
+      ${item('ov-collapse', allCollapsed ? 'Expand All Groups' : 'Collapse All Groups')}
+      ${item('ov-hide', 'Hide Amounts to Share', check(hideOn))}
+      <div class="m-menu-div"></div>
+      ${item('ov-settings', 'Settings & Privacy')}
+    </div>`);
+  sheet.classList.add('bottom-sheet', 'ss-sheet');
+  sheet.onclick = e => {
+    const act = e.target.closest('[data-act]');
+    if (!act) return;
+    switch (act.dataset.act) {
+      case 'ov-recent': openRecentMovesSheet(); break;
+      case 'ov-undo': store.undo(); closeModal(); break;
+      case 'ov-redo': closeModal(); toast('Redo coming soon'); break;
+      case 'ov-add-group': {
+        const name = prompt('New group name:');
+        if (name && name.trim()) store.addGroup(name.trim());
+        closeModal();
+        break;
+      }
+      case 'ov-progress': store.updateSettings({ progressBars: !bars }); closeModal(); break;
+      case 'ov-collapse': {
+        if (allCollapsed) collapsedGroups.clear();
+        else md.groups.forEach(g => collapsedGroups.add(g.id));
+        closeModal(); render(root, { month: curMonth });
+        break;
+      }
+      case 'ov-hide': store.updateSettings({ hideAmounts: !hideOn }); closeModal(); break;
+      case 'ov-settings': closeModal(); navigate('#/settings'); break;
+    }
+  };
+}
+
+function openRecentMovesSheet() {
+  const moves = store.recentMoves();
+  const catName = id => id ? (store.state.categories.find(c => c.id === id)?.name || 'None') : 'Ready to Assign';
+  const rows = moves.slice(0, 40).map(m => {
+    const from = m.type === 'move' ? catName(m.fromCatId) : 'Ready to Assign';
+    const to = catName(m.toCatId);
+    return h`<div class="recent-row"><span class="recent-date">${m.date}</span><span class="recent-desc">${from} → ${to}</span><span class="recent-amt">${fmt(m.amount)}</span></div>`;
+  }).join('');
+  const sheet = openModal(h`<div class="sheet-handle"></div><h2 class="sheet-title">Recent Moves</h2>
+    <div class="m-recent">${moves.length ? rows : `<p class="muted">No money moves in the last 34 days. Assign or move money and it'll show up here.</p>`}</div>`);
+  sheet.classList.add('bottom-sheet', 'ss-sheet');
 }
 
 // ================= mobile bottom sheets =================
