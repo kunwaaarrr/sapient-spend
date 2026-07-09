@@ -527,7 +527,8 @@ function wireEvents(root, md) {
 
   root.onclick = e => {
     const act = e.target.closest('[data-act]');
-    if (!act) { closeAllPopovers(root); return; }
+    // clicks inside an open popover (e.g. typing in the income input) must not close it
+    if (!act) { if (!e.target.closest('.popover')) closeAllPopovers(root); return; }
     const id = act.dataset.id;
     switch (act.dataset.act) {
       case 'toggle-group':
