@@ -412,7 +412,8 @@
   .m-cover .cover-btn { height: 30px; font-size: 13px; border-radius: 999px; padding: 0 15px; }
 
   /* ---- category list ---- */
-  .m-list { margin-top: 11px; background: var(--bg); }
+  /* extra clearance so the last row can scroll clear of the floating ＋ Transaction pill */
+  .m-list { margin-top: 11px; padding-bottom: 64px; background: var(--bg); }
   .m-group { display: flex; align-items: center; gap: 8px; background: var(--bg-alt); padding: 10px 14px; }
   .m-group-chev { color: var(--text-2); display: inline-flex; flex-shrink: 0; }
   .m-group-chev .ico { width: 15px; height: 15px; }
@@ -451,7 +452,7 @@
   /* ---- overflow / edit-plan menus ---- */
   .m-menu { display: flex; flex-direction: column; }
   .m-menu-item { display: flex; align-items: center; justify-content: space-between; width: 100%; text-align: left; padding: 16px 4px; font-size: 17px; color: var(--text); border-bottom: 1px solid var(--line-subtle); }
-  .m-menu-item:last-child { border-bottom: none; }
+  .m-menu-item:last-child, .m-menu-item:has(+ .m-menu-div) { border-bottom: none; }
   .m-menu-item:disabled { color: var(--text-faint); }
   .m-menu-div { height: 1px; background: var(--line); margin: 6px 0; }
   .m-check { color: var(--blue); font-weight: 700; font-size: 18px; }

@@ -513,12 +513,22 @@ function wireEvents(root, md) {
 
   root.querySelectorAll('.assigned-input').forEach(inp => {
     inp.focus(); inp.select();
-    const commit = () => { store.assign(curMonth, inp.dataset.id, parseAmount(inp.value)); editingCatId = null; };
+    // only clear editingCatId if it's still ours — the outside click that triggered this
+    // (deferred) commit may itself have already opened a different cell for editing
+    const commit = () => {
+      store.assign(curMonth, inp.dataset.id, parseAmount(inp.value));
+      if (editingCatId === inp.dataset.id) editingCatId = null;
+    };
     inp.onkeydown = e => {
       if (e.key === 'Enter') { commit(); }
       else if (e.key === 'Escape') { editingCatId = null; render(root, { month: curMonth }); }
     };
-    inp.onblur = commit;
+    // deferred to a macrotask: committing synchronously on blur re-renders (tears down)
+    // the DOM mid-click, so the pending mouseup/click on the outside target gets
+    // swallowed by the browser (target node vanished between mousedown and mouseup).
+    // setTimeout (not requestAnimationFrame) — rAF only fires on paint and can stall
+    // indefinitely in a backgrounded/non-visible tab; setTimeout always runs.
+    inp.onblur = () => setTimeout(commit, 0);
   });
 
   root.querySelector('#month-note-input')?.addEventListener('change', e => {

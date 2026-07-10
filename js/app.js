@@ -151,6 +151,19 @@ document.getElementById('tabbar').onclick = e => {
 };
 document.getElementById('mobile-transaction-btn').onclick = () => registerView.openAddTransactionModal();
 
+// collapse the ＋ Transaction pill to a square while scrolling down, expand near the top or scrolling up
+{
+  const scrollEl = document.getElementById('view'); // the actual scrolling element (#view { overflow-y: auto })
+  let lastScrollTop = 0;
+  scrollEl.addEventListener('scroll', () => {
+    const btn = document.getElementById('mobile-transaction-btn');
+    const st = scrollEl.scrollTop;
+    if (st <= 8) btn.classList.remove('collapsed');
+    else btn.classList.toggle('collapsed', st > lastScrollTop);
+    lastScrollTop = st;
+  }, { passive: true });
+}
+
 // ---------- keep popovers inside the viewport ----------
 // menus anchor to their trigger and can bleed past the phone's right edge; nudge them back
 function clampPopover(el) {

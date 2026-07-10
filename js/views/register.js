@@ -17,6 +17,8 @@ const TYPE_LABEL = {
 };
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const DOW = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+// line-style magnifier to match the app's other inline icons (ICONS in util.js has no search glyph)
+const SEARCH_ICO = '<svg class="search-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="10.8" cy="10.8" r="7"/><path d="M20 20l-4.8-4.8"/></svg>';
 
 // ---------- module-local UI state (survives store re-renders) ----------
 let curAccountId; // account currently rendered (null = all)
@@ -190,7 +192,7 @@ export function renderSpendingOverview(root) {
     <header class="spending-overview-head">
       <h1>Spending</h1>
       <div class="spending-head-actions">
-        <button id="spending-search-toggle" class="spending-head-icon" aria-label="Search transactions">⌕</button>
+        <button id="spending-search-toggle" class="spending-head-icon" aria-label="Search transactions">${SEARCH_ICO}</button>
         <button id="spending-more" class="spending-head-icon" aria-label="More spending options">⋮</button>
       </div>
     </header>
@@ -363,7 +365,7 @@ export function render(root, { accountId }) {
         ${viewMenuOpen ? renderViewMenu(false) : ''}
       </div>` : ''}
       <div class="reg-search-wrap">
-        <span class="reg-search-ico">🔍</span>
+        <span class="reg-search-ico">${SEARCH_ICO}</span>
         <input class="reg-search" id="reg-search" type="search" placeholder="Search ${esc(account ? account.name : 'All Accounts')}" value="${esc(search)}">
       </div>
     </div>

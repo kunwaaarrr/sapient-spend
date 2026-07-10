@@ -183,13 +183,21 @@ html, body { overflow-x: clip; }
 
 #mobile-transaction-btn {
   display: none; position: fixed; right: 16px; bottom: calc(var(--tabbar-h) + 14px); z-index: 39;
-  height: 46px; padding: 0 18px; border-radius: 13px; background: var(--blue); color: #fff;
-  align-items: center; gap: 9px; box-shadow: 0 7px 18px rgba(60,66,200,.32);
+  height: 48px; padding: 0 18px; border-radius: 14px; background: var(--blue); color: #fff;
+  align-items: center; justify-content: center; gap: 9px; box-shadow: 0 7px 18px rgba(60,66,200,.32);
   font-size: 15px; font-weight: 700;
+  transition: padding .22s ease, border-radius .22s ease, gap .22s ease;
 }
 #mobile-transaction-btn > span:first-child { font-size: 22px; font-weight: 400; line-height: 1; }
+#mobile-transaction-btn > span:last-child {
+  overflow: hidden; white-space: nowrap; max-width: 120px;
+  transition: max-width .22s ease, opacity .15s ease, margin-left .22s ease;
+}
 #mobile-transaction-btn:active { background: var(--blue-dark); transform: translateY(1px); }
 #mobile-transaction-btn[hidden] { display: none !important; }
+/* scrolled down: collapse to a rounded square showing just the ＋, tap target stays ≥48px */
+#mobile-transaction-btn.collapsed { padding: 0 13px; gap: 0; border-radius: 16px; }
+#mobile-transaction-btn.collapsed > span:last-child { max-width: 0; opacity: 0; margin-left: 0; }
 .reflect-tool-back { display: none; }
 
 /* ================= shared components ================= */
