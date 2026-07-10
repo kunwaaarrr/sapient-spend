@@ -131,7 +131,8 @@ document.getElementById('bank-connections-btn').onclick = () =>
 function renderTabbar(route) {
   const map = {
     budget: 'plan',
-    account: 'spending', spending: 'spending', accounts: 'spending',
+    spending: 'spending',
+    account: 'accounts', accounts: 'accounts',
     reports: 'reflect', fifty: 'reflect', forecast: 'reflect', loans: 'reflect',
   };
   document.querySelectorAll('#tabbar button').forEach(b =>
@@ -145,6 +146,7 @@ document.getElementById('tabbar').onclick = e => {
   const go = {
     plan: `#/budget/${thisMonth()}`,
     spending: '#/spending',
+    accounts: '#/accounts',
     reflect: '#/reports/overview',
   };
   navigate(go[btn.dataset.tab]);

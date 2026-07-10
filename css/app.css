@@ -232,6 +232,20 @@ html, body { overflow-x: clip; }
 }
 .mobile-search-shell > button .ico { width: 17px; height: 17px; }
 
+/* Compact overflow card shared by the Plan and Spending top-bar menus. */
+.mobile-options-modal { width: min(351px, calc(100vw - 24px)) !important; padding: 14px 12px 8px !important; border-radius: 18px !important; }
+.mobile-options-title { padding: 2px 8px 10px; margin: 0 !important; font-size: 17px !important; font-weight: 650; }
+.mobile-options-menu { display: flex; flex-direction: column; }
+.mobile-options-row {
+  width: 100%; min-height: 47px; padding: 11px 8px; border-top: 1px solid var(--line-subtle);
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  color: var(--text); text-align: left; font-size: 16px;
+}
+.mobile-options-row:first-child { border-top: 0; }
+.mobile-options-row:hover, .mobile-options-row:active { background: var(--bg-alt); }
+.mobile-options-row:disabled { color: var(--text-faint); background: transparent; }
+.mobile-options-row .mobile-options-check { color: var(--blue); font-size: 17px; font-weight: 750; }
+
 /* ================= shared components ================= */
 .pill {
   display: inline-block; min-width: 51px; padding: 2px 7px; border-radius: 1000px;

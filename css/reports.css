@@ -24,11 +24,16 @@
 .reflect-overview-more { font-size: 26px; line-height: 1; }
 .reflect-overview-more .ico { width: 22px; height: 22px; }
 .reflect-overview-menu {
-  position: absolute; top: 100%; right: 0; z-index: 35; min-width: 190px; padding: 6px;
-  border-radius: 10px; background: var(--bg); box-shadow: var(--shadow);
+  position: fixed; top: 58px; left: 14px; right: 14px; z-index: 35; padding: 14px;
+  border-radius: 18px; background: var(--bg); box-shadow: var(--shadow);
 }
-.reflect-overview-menu a { display: block; padding: 9px 11px; border-radius: 7px; font-size: 13px; }
-.reflect-overview-menu a:hover { background: var(--bg-alt); }
+.reflect-overview-menu[hidden] { display: none; }
+.reflect-view-menu-title { padding: 0 2px 12px; display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.reflect-view-menu-title strong { font-size: 16px; }
+.reflect-view-menu-title span { color: var(--text-dim); font-size: 11px; }
+.reflect-view-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.reflect-view-grid a { min-height: 46px; padding: 8px 10px; border-radius: 12px; background: var(--bg-alt); display: flex; align-items: center; justify-content: center; text-align: center; font-size: 13px; font-weight: 650; }
+.reflect-view-grid a:hover, .reflect-view-grid a:active { background: var(--chip-active-bg); color: var(--blue-dark); }
 .reflect-overview-cards { display: flex; flex-direction: column; gap: 12px; padding: 14px; }
 .reflect-summary-card { display: block; border-radius: 20px; padding: 16px; background: var(--bg); }
 .reflect-card-link-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--link); }
@@ -77,12 +82,23 @@
   position: absolute; top: calc(100% + 3px); right: 10px; z-index: 34; width: 220px; padding: 7px;
   border-radius: 14px; background: var(--bg); box-shadow: var(--shadow);
 }
+.mobile-report-menu-title { padding: 7px 10px 8px; color: var(--text-2); font-size: 11px; font-weight: 750; letter-spacing: .055em; text-transform: uppercase; }
 .mobile-report-menu a, .mobile-report-menu button { width: 100%; display: block; padding: 10px 11px; border-radius: 9px; text-align: left; font-size: 13px; }
 .mobile-report-menu a.active { background: var(--chip-active-bg); color: var(--blue-dark); font-weight: 700; }
-.mobile-report-menu button { margin-top: 4px; border-top: 1px solid var(--line-subtle); color: var(--link); }
+.mobile-report-menu .mobile-report-export-action {
+  min-height: 52px; margin-top: 7px; padding: 9px 10px; border-top: 1px solid var(--line-subtle); border-radius: 0 0 9px 9px;
+  display: grid; grid-template-columns: 30px 1fr; gap: 9px; align-items: center; color: var(--text);
+}
+.mobile-report-export-action > span:first-child { width: 30px; height: 30px; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; background: var(--chip-active-bg); color: var(--blue); }
+.mobile-report-export-action .ico { width: 17px; height: 17px; }
+.mobile-report-export-action > span:last-child { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.mobile-report-export-action strong { font-size: 13px; font-weight: 700; }
+.mobile-report-export-action small { color: var(--text-dim); font-size: 10px; }
 .mobile-report-range { margin: 11px 14px 0; display: grid; grid-template-columns: 32px minmax(0, 1fr) 32px; align-items: center; border-radius: 999px; background: var(--bg); box-shadow: 0 2px 8px rgba(20,30,70,.06); }
 .mobile-report-range > button { height: 39px; color: var(--link); font-size: 21px; }
-.mobile-report-range #mobile-range-open { min-width: 0; display: flex; align-items: center; justify-content: center; gap: 7px; font-size: 14px; font-weight: 700; }
+.mobile-report-range #mobile-range-open { min-width: 0; display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 14px; font-weight: 700; line-height: 1; }
+.mobile-range-chevron { width: 16px; height: 16px; flex: 0 0 16px; display: inline-flex; align-items: center; justify-content: center; }
+.mobile-range-chevron .ico { width: 15px; height: 15px; stroke-width: 2; }
 .mobile-report-filter-summary { display: flex; gap: 7px; padding: 8px 14px 0; overflow-x: auto; }
 .mobile-report-filter-summary button { flex-shrink: 0; padding: 6px 11px; border-radius: 999px; background: var(--bg); color: var(--link); font-size: 12px; font-weight: 650; }
 .mobile-report-content { min-width: 0; padding: 13px 14px 26px; display: flex; flex-direction: column; gap: 13px; }

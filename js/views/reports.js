@@ -232,16 +232,19 @@ function reflectOverview(root) {
     <header class="reflect-overview-head mobile-page-head">
       <h1 class="mobile-page-title">Reflect</h1>
       <div class="reflect-overview-menu-wrap mobile-page-actions">
-        <button id="reflect-overview-more" class="reflect-overview-more mobile-head-action" aria-label="More Reflect options">${ICONS.moreVertical}</button>
-        <div id="reflect-overview-menu" class="reflect-overview-menu" hidden>
-          <a href="#/reports/spending">Spending Breakdown</a>
-          <a href="#/reports/trends">Spending Trends</a>
-          <a href="#/reports/net-worth">Net Worth</a>
-          <a href="#/reports/income-expense">Income v Expense</a>
-          <a href="#/reports/age-of-money">Age of Money</a>
-          <a href="#/fifty">50/30/20</a>
-          <a href="#/forecast">Forecast &amp; What-If</a>
-          <a href="#/loans">Loan Planner</a>
+        <button id="reflect-overview-more" class="reflect-overview-more mobile-head-action" aria-label="Choose Reflect view">${ICONS.views}</button>
+        <div id="reflect-overview-menu" class="reflect-overview-menu" role="dialog" aria-label="Reflect views" hidden>
+          <div class="reflect-view-menu-title"><strong>Reflect views</strong><span>Reports and planning tools</span></div>
+          <div class="reflect-view-grid">
+            <a href="#/reports/spending">Spending</a>
+            <a href="#/reports/trends">Trends</a>
+            <a href="#/reports/net-worth">Net worth</a>
+            <a href="#/reports/income-expense">Income v expense</a>
+            <a href="#/reports/age-of-money">Age of money</a>
+            <a href="#/fifty">50/30/20</a>
+            <a href="#/forecast">Forecast</a>
+            <a href="#/loans">Loan planner</a>
+          </div>
         </div>
       </div>
     </header>
@@ -306,10 +309,11 @@ function mobileReportHeader(active, title) {
     <a href="#/reports/overview" class="mobile-report-head-back" aria-label="Back to Reflect">‹</a>
     <h1>${title}</h1>
     <button id="mobile-filter-open" class="mobile-report-head-button mobile-head-action" aria-label="Open report filters">${ICONS.filter}</button>
-    <button id="mobile-report-menu-toggle" class="mobile-report-head-button mobile-head-action" aria-label="More report options">${ICONS.moreVertical}</button>
+    <button id="mobile-report-menu-toggle" class="mobile-report-head-button mobile-head-action" aria-label="Choose report view">${ICONS.views}</button>
     <div class="mobile-report-menu" id="mobile-report-menu" ${state.mobileMenuOpen ? '' : 'hidden'}>
+      <div class="mobile-report-menu-title">Report views</div>
       ${TABS.map(item => h`<a class="${item.id === active ? 'active' : ''}" href="#/reports/${item.id}">${item.label}</a>`)}
-      <button id="mobile-report-export-action">Export this report</button>
+      <button id="mobile-report-export-action" class="mobile-report-export-action"><span aria-hidden="true">${ICONS.download}</span><span><strong>Export report</strong><small>Download this view as CSV</small></span></button>
     </div>
   </header>`;
 }
@@ -322,7 +326,7 @@ function mobileRangeBar(active) {
   const accountLabel = state.accountIds ? `${state.accountIds.length} accounts` : 'All accounts';
   return h`<div class="mobile-report-range">
     <button id="mobile-month-prev" aria-label="Previous period">‹</button>
-    <button id="mobile-range-open">${range}<span aria-hidden="true">⌄</span></button>
+    <button id="mobile-range-open"><span>${range}</span><span class="mobile-range-chevron" aria-hidden="true">${ICONS.chevronDown}</span></button>
     <button id="mobile-month-next" aria-label="Next period">›</button>
   </div>
   ${(showCategories || showAccounts) ? h`<div class="mobile-report-filter-summary">

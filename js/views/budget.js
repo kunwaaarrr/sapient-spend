@@ -1315,46 +1315,54 @@ function openEditPlanSheet(root, md) {
 
 // ---------- Overflow (three-dot) sheet ----------
 function openOverflowSheet(root, md) {
-  const bars = progressBarsOn();
-  const hideOn = store.state.settings.hideAmounts;
-  const allCollapsed = collapsedGroups.size > 0;
-  const item = (act, label, extra = '') => h`<button class="m-menu-item" data-act="${act}">
-    <span class="m-menu-label">${label}</span>${extra}</button>`;
-  const check = on => on ? `<span class="m-check">✓</span>` : '';
-  const sheet = openModal(h`<div class="sheet-handle"></div>
-    <div class="m-menu m-overflow">
-      ${item('ov-recent', 'Recent Moves')}
-      <button class="m-menu-item" data-act="ov-undo" ${store.canUndo() ? '' : 'disabled'}><span class="m-menu-label">Undo Assignment/Move</span></button>
-      ${item('ov-redo', 'Redo')}
-      <div class="m-menu-div"></div>
-      ${item('ov-add-group', 'Add Category Group')}
-      ${item('ov-progress', 'Progress Bars', check(bars))}
-      ${item('ov-collapse', allCollapsed ? 'Expand All Groups' : 'Collapse All Groups')}
-      ${item('ov-hide', 'Hide Amounts to Share', check(hideOn))}
-      <div class="m-menu-div"></div>
-      ${item('ov-settings', 'Settings & Privacy')}
+  const modal = openModal(h`<h2 class="mobile-options-title">Plan options</h2>
+    <div class="mobile-options-menu">
+      <button class="mobile-options-row" data-act="ov-recent">Recent moves</button>
+      <button class="mobile-options-row" data-act="ov-undo" ${store.canUndo() ? '' : 'disabled'}>Undo assignment or move</button>
+      <button class="mobile-options-row" data-act="ov-add-group">Add category group</button>
+      <button class="mobile-options-row" data-act="ov-display">Display &amp; privacy <span aria-hidden="true">›</span></button>
     </div>`);
-  sheet.classList.add('bottom-sheet', 'ss-sheet');
-  sheet.onclick = e => {
+  modal.classList.add('mobile-options-modal');
+  modal.onclick = e => {
     const act = e.target.closest('[data-act]');
     if (!act) return;
     switch (act.dataset.act) {
       case 'ov-recent': openRecentMovesSheet(); break;
       case 'ov-undo': store.undo(); closeModal(); break;
-      case 'ov-redo': closeModal(); toast('Redo coming soon'); break;
       case 'ov-add-group': {
         const name = prompt('New group name:');
         if (name && name.trim()) store.addGroup(name.trim());
         closeModal();
         break;
       }
+      case 'ov-display': openPlanDisplayOptions(root, md); break;
+    }
+  };
+}
+
+function openPlanDisplayOptions(root, md) {
+  const bars = progressBarsOn();
+  const hideOn = store.state.settings.hideAmounts;
+  const allCollapsed = collapsedGroups.size > 0;
+  const check = on => on ? '<span class="mobile-options-check">✓</span>' : '';
+  const modal = openModal(h`<h2 class="mobile-options-title">Display &amp; privacy</h2>
+    <div class="mobile-options-menu">
+      <button class="mobile-options-row" data-act="ov-progress"><span>Progress bars</span>${check(bars)}</button>
+      <button class="mobile-options-row" data-act="ov-collapse">${allCollapsed ? 'Expand all groups' : 'Collapse all groups'}</button>
+      <button class="mobile-options-row" data-act="ov-hide"><span>Hide amounts to share</span>${check(hideOn)}</button>
+      <button class="mobile-options-row" data-act="ov-settings">Settings &amp; privacy <span aria-hidden="true">›</span></button>
+    </div>`);
+  modal.classList.add('mobile-options-modal');
+  modal.onclick = event => {
+    const action = event.target.closest('[data-act]');
+    if (!action) return;
+    switch (action.dataset.act) {
       case 'ov-progress': store.updateSettings({ progressBars: !bars }); closeModal(); break;
-      case 'ov-collapse': {
+      case 'ov-collapse':
         if (allCollapsed) collapsedGroups.clear();
-        else md.groups.forEach(g => collapsedGroups.add(g.id));
+        else md.groups.forEach(group => collapsedGroups.add(group.id));
         closeModal(); render(root, { month: curMonth });
         break;
-      }
       case 'ov-hide': store.updateSettings({ hideAmounts: !hideOn }); closeModal(); break;
       case 'ov-settings': closeModal(); navigate('#/settings'); break;
     }

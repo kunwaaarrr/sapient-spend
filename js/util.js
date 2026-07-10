@@ -84,4 +84,7 @@ export const ICONS = {
   filter: I('<circle cx="12" cy="12" r="9.3"/><path d="M6.8 9.3h10.4M8.4 12.3h7.2M10.4 15.3h3.2"/>'),
   edit: I('<path d="M4.5 21h15"/><path d="M14.6 4.9l4.4 4.4-9.3 9.3-4.9 1 1-4.9 8.8-8.8z"/>'),
   add: I('<path d="M12 5v14M5 12h14"/>'),
+  views: I('<rect x="4" y="4" width="6" height="6" rx="1.2"/><rect x="14" y="4" width="6" height="6" rx="1.2"/><rect x="4" y="14" width="6" height="6" rx="1.2"/><rect x="14" y="14" width="6" height="6" rx="1.2"/>'),
+  chevronDown: I('<path d="m7 9.5 5 5 5-5"/>'),
+  download: I('<path d="M12 3.5v11M7.8 10.5 12 14.7l4.2-4.2M5 19.5h14"/>'),
 };

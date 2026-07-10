@@ -294,17 +294,18 @@ function spendingCategory(transaction) {
 }
 
 function openSpendingMore(root) {
-  const modal = openModal(h`<h2>Spending options</h2>
-    <div class="accounts-modal-menu">
-      <button class="accounts-modal-row" id="spending-more-filter">${spendingOnlyUncleared ? 'Show all transactions' : 'Show uncleared only'}</button>
-      <button class="accounts-modal-row" id="spending-more-scheduled">${spendingScheduledOpen ? 'Hide scheduled transactions' : 'Scheduled transactions'}</button>
-      <button class="accounts-modal-row" id="spending-more-add">Add a transaction</button>
-      <button class="accounts-modal-row" id="spending-more-accounts">Accounts</button>
+  const modal = openModal(h`<h2 class="mobile-options-title">Spending options</h2>
+    <div class="mobile-options-menu">
+      <button class="mobile-options-row" id="spending-more-filter">${spendingOnlyUncleared ? 'Show all transactions' : 'Show uncleared only'}</button>
+      <button class="mobile-options-row" id="spending-more-scheduled">${spendingScheduledOpen ? 'Hide scheduled transactions' : 'Scheduled transactions'}</button>
+      <button class="mobile-options-row" id="spending-more-add">Add a transaction</button>
+      <button class="mobile-options-row" id="spending-more-settings">Settings &amp; privacy <span aria-hidden="true">›</span></button>
     </div>`);
+  modal.classList.add('mobile-options-modal');
   modal.querySelector('#spending-more-filter').onclick = () => { closeModal(); spendingOnlyUncleared = !spendingOnlyUncleared; renderSpendingOverview(root); };
   modal.querySelector('#spending-more-scheduled').onclick = () => { closeModal(); spendingScheduledOpen = !spendingScheduledOpen; renderSpendingOverview(root); };
   modal.querySelector('#spending-more-add').onclick = () => { closeModal(); openAddTransactionModal(); };
-  modal.querySelector('#spending-more-accounts').onclick = () => { closeModal(); navigate('#/accounts'); };
+  modal.querySelector('#spending-more-settings').onclick = () => { closeModal(); navigate('#/settings'); };
 }
 
 // ---------- main render ----------
