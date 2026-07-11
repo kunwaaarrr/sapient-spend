@@ -123,14 +123,14 @@ function simResults(account, balance, rate, payment) {
       </div>`;
 }
 
-function renderSimulator(root, account) {
+function renderSimulator(root, account, context = 'reflect') {
   if (curAccountId !== account.id) { curAccountId = account.id; extraCents = 0; }
   const balance = Math.abs(store.accountBalances(account.id).working);
   const rate = account.loanInfo.interestRate;
   const payment = account.loanInfo.minimumPayment;
 
   root.innerHTML = h`<div class="view-head loans-head">
-      ${innerWidth < 768 ? '<a class="reflect-tool-back" href="#/loans" aria-label="Back to Loan Planner">‹</a>' : ''}
+      ${innerWidth < 768 ? `<a class="reflect-tool-back" href="${context === 'accounts' ? '#/accounts' : '#/loans'}" aria-label="${context === 'accounts' ? 'Back to Accounts' : 'Back to Loan Planner'}">‹</a>` : ''}
       <div>
         <div class="view-title">${account.name}</div>
         <div class="muted">${rate}% APR · min payment ${fmt(payment)}/mo · balance <span class="neg-text">${fmt(balance)}</span></div>
@@ -145,7 +145,7 @@ function renderSimulator(root, account) {
         </div>
       </div>
       <div id="sim-results">${simResults(account, balance, rate, payment)}</div>
-      <a class="register-link" href="#/account/${account.id}">View account register →</a>
+      ${context === 'accounts' ? '<a class="register-link" href="#/spending">View all spending →</a>' : `<a class="register-link" href="#/account/${account.id}">View account register →</a>`}
     </div>`;
 
   const slider = root.querySelector('#extra-slider');
@@ -166,9 +166,9 @@ function renderSimulator(root, account) {
   if (document.activeElement !== slider && document.activeElement !== numInput) slider.focus({ preventScroll: true });
 }
 
-export function render(root, { accountId }) {
+export function render(root, { accountId, context = 'reflect' }) {
   if (!accountId) { curAccountId = undefined; renderGrid(root); return; }
   const account = store.state.accounts.find(a => a.id === accountId);
   if (!account || !account.loanInfo) { navigate('#/loans'); return; }
-  renderSimulator(root, account);
+  renderSimulator(root, account, context);
 }

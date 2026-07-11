@@ -245,6 +245,18 @@ html, body { overflow-x: clip; }
 .mobile-options-row:hover, .mobile-options-row:active { background: var(--bg-alt); }
 .mobile-options-row:disabled { color: var(--text-faint); background: transparent; }
 .mobile-options-row .mobile-options-check { color: var(--blue); font-size: 17px; font-weight: 750; }
+.mobile-options-row-main { min-width: 0; display: flex; align-items: center; gap: 10px; }
+.mobile-options-icon {
+  width: 30px; height: 30px; flex: 0 0 30px; border-radius: 9px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--chip-active-bg); color: var(--blue);
+}
+.mobile-options-icon .ico { width: 17px; height: 17px; stroke-width: 1.8; }
+.mobile-options-checkbox {
+  width: 20px; height: 20px; flex: 0 0 20px; border: 1.5px solid var(--text-faint); border-radius: 6px;
+  display: inline-flex; align-items: center; justify-content: center; color: transparent; font-size: 13px; font-weight: 800;
+}
+.mobile-options-checkbox.checked { border-color: var(--blue); background: var(--blue); color: var(--on-brand); }
 
 /* ================= shared components ================= */
 .pill {

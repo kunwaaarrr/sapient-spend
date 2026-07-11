@@ -32,16 +32,21 @@
 .reflect-view-menu-title strong { font-size: 16px; }
 .reflect-view-menu-title span { color: var(--text-dim); font-size: 11px; }
 .reflect-view-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.reflect-view-grid a { min-height: 46px; padding: 8px 10px; border-radius: 12px; background: var(--bg-alt); display: flex; align-items: center; justify-content: center; text-align: center; font-size: 13px; font-weight: 650; }
+.reflect-view-grid a { min-height: 58px; padding: 8px; border-radius: 13px; background: var(--bg-alt); display: flex; align-items: center; justify-content: flex-start; gap: 8px; text-align: left; font-size: 12.5px; font-weight: 650; }
 .reflect-view-grid a:hover, .reflect-view-grid a:active { background: var(--chip-active-bg); color: var(--blue-dark); }
+.reflect-view-icon { width: 32px; height: 32px; flex: 0 0 32px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; background: var(--chip-active-bg); color: var(--blue); }
+.reflect-view-icon .ico { width: 17px; height: 17px; stroke-width: 1.8; }
 .reflect-overview-cards { display: flex; flex-direction: column; gap: 12px; padding: 14px; }
 .reflect-summary-card { display: block; border-radius: 20px; padding: 16px; background: var(--bg); }
 .reflect-card-link-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--link); }
 .reflect-card-link-head strong { display: inline-flex; align-items: center; gap: 7px; font-size: 16px; }
+.reflect-card-link-head strong > span:first-child { display: inline-flex; }
+.reflect-card-link-head strong .ico { width: 17px; height: 17px; stroke-width: 1.9; }
 .reflect-card-link-head > span { font-size: 27px; line-height: 1; color: var(--text-faint); }
 .reflect-period { margin-top: 17px; font-size: 14px; color: var(--text-2); }
 .reflect-primary-amount { margin-top: 2px; font-size: 34px; font-weight: 750; letter-spacing: -.5px; }
-.reflect-solid-bar { height: 12px; margin: 14px 0 16px; border-radius: 999px; background: var(--blue); }
+.reflect-allocation-bar { height: 12px; margin: 14px 0 16px; border-radius: 999px; overflow: hidden; display: flex; background: var(--track); }
+.reflect-allocation-bar > span { min-width: 2px; height: 100%; flex-basis: 0; }
 .reflect-list-head { display: flex; justify-content: space-between; margin-bottom: 4px; color: var(--text-2); font-size: 13px; }
 .reflect-top-list { display: flex; flex-direction: column; }
 .reflect-top-list > div { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 7px 0; font-size: 14px; }

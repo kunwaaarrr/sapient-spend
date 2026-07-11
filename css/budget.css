@@ -380,7 +380,7 @@
   .edit-plan-target.empty { color: var(--blue); font-weight: 700; }
 
   /* ---- top bar ---- */
-  .budget-mobile { min-height: 100%; padding-bottom: 24px; background: var(--app-cream); }
+  .budget-mobile { min-height: 100%; padding-bottom: 72px; background: var(--app-cream); }
   .m-head { padding: 10px 14px 8px; }
   .m-month-wrap { position: relative; }
   .m-month { display: flex; align-items: center; gap: 8px; font-size: 23px; font-weight: 600; color: var(--text); letter-spacing: -.3px; }
@@ -412,8 +412,8 @@
   .m-cover .cover-btn { height: 30px; font-size: 13px; border-radius: 999px; padding: 0 15px; }
 
   /* ---- category list ---- */
-  /* extra clearance so the last row can scroll clear of the floating ＋ Transaction pill */
-  .m-list { margin-top: 11px; padding-bottom: 64px; background: var(--bg); }
+  /* FAB clearance lives on the cream page, so the final category no longer leaves a white slab below it. */
+  .m-list { margin-top: 11px; padding-bottom: 0; background: transparent; }
   .m-group { display: flex; align-items: center; gap: 8px; background: var(--bg-alt); padding: 10px 14px; }
   .m-group-chev { color: var(--text-2); display: inline-flex; flex-shrink: 0; }
   .m-group-chev .ico { width: 15px; height: 15px; }

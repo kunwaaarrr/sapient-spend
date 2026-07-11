@@ -227,6 +227,10 @@ function reflectOverview(root) {
   const comparisonMax = Math.max(1, income, totalSpending);
   const incomeWidth = Math.round((income / comparisonMax) * 100);
   const spendingWidth = Math.round((totalSpending / comparisonMax) * 100);
+  const allocationSegments = raw.filter(item => item.amount > 0).map((item, index) => {
+    const share = totalSpending ? Math.round((item.amount / totalSpending) * 100) : 0;
+    return h`<span style="flex-grow:${item.amount};background:var(${CHART_COLORS[index % CHART_COLORS.length]})" title="${item.name}: ${share}%"></span>`;
+  }).join('');
 
   root.innerHTML = h`<div class="reflect-overview">
     <header class="reflect-overview-head mobile-page-head">
@@ -236,31 +240,31 @@ function reflectOverview(root) {
         <div id="reflect-overview-menu" class="reflect-overview-menu" role="dialog" aria-label="Reflect views" hidden>
           <div class="reflect-view-menu-title"><strong>Reflect views</strong><span>Reports and planning tools</span></div>
           <div class="reflect-view-grid">
-            <a href="#/reports/spending">Spending</a>
-            <a href="#/reports/trends">Trends</a>
-            <a href="#/reports/net-worth">Net worth</a>
-            <a href="#/reports/income-expense">Income v expense</a>
-            <a href="#/reports/age-of-money">Age of money</a>
-            <a href="#/fifty">50/30/20</a>
-            <a href="#/forecast">Forecast</a>
-            <a href="#/loans">Loan planner</a>
+            <a href="#/reports/spending"><span class="reflect-view-icon" aria-hidden="true">${ICONS.spending}</span><span>Spending</span></a>
+            <a href="#/reports/trends"><span class="reflect-view-icon" aria-hidden="true">${ICONS.forecast}</span><span>Trends</span></a>
+            <a href="#/reports/net-worth"><span class="reflect-view-icon" aria-hidden="true">${ICONS.reflect}</span><span>Net worth</span></a>
+            <a href="#/reports/income-expense"><span class="reflect-view-icon" aria-hidden="true">${ICONS.accounts}</span><span>Income v expense</span></a>
+            <a href="#/reports/age-of-money"><span class="reflect-view-icon" aria-hidden="true">${ICONS.clock}</span><span>Age of money</span></a>
+            <a href="#/fifty"><span class="reflect-view-icon" aria-hidden="true">${ICONS.fifty}</span><span>50/30/20</span></a>
+            <a href="#/forecast"><span class="reflect-view-icon" aria-hidden="true">${ICONS.forecast}</span><span>Forecast</span></a>
+            <a href="#/loans"><span class="reflect-view-icon" aria-hidden="true">${ICONS.loans}</span><span>Loan planner</span></a>
           </div>
         </div>
       </div>
     </header>
     <main class="reflect-overview-cards">
       <a class="reflect-summary-card reflect-spending-summary" href="#/reports/spending">
-        <div class="reflect-card-link-head"><strong><span aria-hidden="true">◔</span> Spending Breakdown</strong><span aria-hidden="true">›</span></div>
+        <div class="reflect-card-link-head"><strong><span aria-hidden="true">${ICONS.spending}</span> Spending Breakdown</strong><span aria-hidden="true">›</span></div>
         <div class="reflect-period">${monthLabel(month)}</div>
         <div class="reflect-primary-amount">${fmt(totalSpending)}</div>
-        <div class="reflect-solid-bar"></div>
+        <div class="reflect-allocation-bar" aria-label="Spending allocation by category">${allocationSegments}</div>
         <div class="reflect-list-head"><span>Top Categories</span><span>Spent</span></div>
         <div class="reflect-top-list">
           ${topCategories.length ? topCategories.map((item, index) => h`<div><span><i style="background:var(${CHART_COLORS[index % CHART_COLORS.length]})"></i>${item.name}</span><strong>${fmt(item.amount)}</strong></div>`).join('') : '<p class="muted">No spending this month yet.</p>'}
         </div>
       </a>
       <a class="reflect-summary-card" href="#/reports/income-expense">
-        <div class="reflect-card-link-head"><strong><span aria-hidden="true">▥</span> Income vs Spending</strong><span aria-hidden="true">›</span></div>
+        <div class="reflect-card-link-head"><strong><span aria-hidden="true">${ICONS.accounts}</span> Income vs Spending</strong><span aria-hidden="true">›</span></div>
         <p class="reflect-insight">${income >= totalSpending ? 'You are spending less than you brought in.' : 'Spending is currently ahead of income.'}</p>
         <div class="reflect-comparison-row"><span>Income</span><strong>${fmt(income)}</strong></div>
         <div class="reflect-comparison-track"><span class="income" style="width:${incomeWidth}%"></span></div>

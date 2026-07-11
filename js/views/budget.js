@@ -1315,12 +1315,18 @@ function openEditPlanSheet(root, md) {
 
 // ---------- Overflow (three-dot) sheet ----------
 function openOverflowSheet(root, md) {
+  const bars = progressBarsOn();
+  const hideOn = store.state.settings.hideAmounts;
+  const allCollapsed = collapsedGroups.size > 0;
   const modal = openModal(h`<h2 class="mobile-options-title">Plan options</h2>
     <div class="mobile-options-menu">
-      <button class="mobile-options-row" data-act="ov-recent">Recent moves</button>
-      <button class="mobile-options-row" data-act="ov-undo" ${store.canUndo() ? '' : 'disabled'}>Undo assignment or move</button>
-      <button class="mobile-options-row" data-act="ov-add-group">Add category group</button>
-      <button class="mobile-options-row" data-act="ov-display">Display &amp; privacy <span aria-hidden="true">›</span></button>
+      <button class="mobile-options-row" data-act="ov-recent"><span class="mobile-options-row-main"><span class="mobile-options-icon" aria-hidden="true">${ICONS.clock}</span>Recent moves</span></button>
+      <button class="mobile-options-row" data-act="ov-undo"><span class="mobile-options-row-main"><span class="mobile-options-icon" aria-hidden="true">${ICONS.undo}</span>Undo last change</span></button>
+      <button class="mobile-options-row" data-act="ov-add-plan"><span class="mobile-options-row-main"><span class="mobile-options-icon" aria-hidden="true">${ICONS.addCircle}</span>Add category or group</span><span aria-hidden="true">›</span></button>
+      <button class="mobile-options-row" data-act="ov-progress"><span class="mobile-options-row-main"><span class="mobile-options-icon" aria-hidden="true">${ICONS.reflect}</span>Progress bars</span><span class="mobile-options-checkbox ${bars ? 'checked' : ''}" aria-hidden="true">✓</span></button>
+      <button class="mobile-options-row" data-act="ov-collapse"><span class="mobile-options-row-main"><span class="mobile-options-icon" aria-hidden="true">${ICONS.collapse}</span>${allCollapsed ? 'Expand all groups' : 'Collapse all groups'}</span></button>
+      <button class="mobile-options-row" data-act="ov-hide"><span class="mobile-options-row-main"><span class="mobile-options-icon" aria-hidden="true">${ICONS.eye}</span>Hide amounts to share</span><span class="mobile-options-checkbox ${hideOn ? 'checked' : ''}" aria-hidden="true">✓</span></button>
+      <button class="mobile-options-row" data-act="ov-settings"><span class="mobile-options-row-main"><span class="mobile-options-icon" aria-hidden="true">${ICONS.settings}</span>Settings &amp; privacy</span><span aria-hidden="true">›</span></button>
     </div>`);
   modal.classList.add('mobile-options-modal');
   modal.onclick = e => {
@@ -1328,35 +1334,11 @@ function openOverflowSheet(root, md) {
     if (!act) return;
     switch (act.dataset.act) {
       case 'ov-recent': openRecentMovesSheet(); break;
-      case 'ov-undo': store.undo(); closeModal(); break;
-      case 'ov-add-group': {
-        const name = prompt('New group name:');
-        if (name && name.trim()) store.addGroup(name.trim());
-        closeModal();
+      case 'ov-undo':
+        if (store.canUndo()) { store.undo(); closeModal(); toast('Last change undone'); }
+        else { closeModal(); toast('Nothing to undo yet'); }
         break;
-      }
-      case 'ov-display': openPlanDisplayOptions(root, md); break;
-    }
-  };
-}
-
-function openPlanDisplayOptions(root, md) {
-  const bars = progressBarsOn();
-  const hideOn = store.state.settings.hideAmounts;
-  const allCollapsed = collapsedGroups.size > 0;
-  const check = on => on ? '<span class="mobile-options-check">✓</span>' : '';
-  const modal = openModal(h`<h2 class="mobile-options-title">Display &amp; privacy</h2>
-    <div class="mobile-options-menu">
-      <button class="mobile-options-row" data-act="ov-progress"><span>Progress bars</span>${check(bars)}</button>
-      <button class="mobile-options-row" data-act="ov-collapse">${allCollapsed ? 'Expand all groups' : 'Collapse all groups'}</button>
-      <button class="mobile-options-row" data-act="ov-hide"><span>Hide amounts to share</span>${check(hideOn)}</button>
-      <button class="mobile-options-row" data-act="ov-settings">Settings &amp; privacy <span aria-hidden="true">›</span></button>
-    </div>`);
-  modal.classList.add('mobile-options-modal');
-  modal.onclick = event => {
-    const action = event.target.closest('[data-act]');
-    if (!action) return;
-    switch (action.dataset.act) {
+      case 'ov-add-plan': closeModal(); openEditPlanSheet(root, md); break;
       case 'ov-progress': store.updateSettings({ progressBars: !bars }); closeModal(); break;
       case 'ov-collapse':
         if (allCollapsed) collapsedGroups.clear();

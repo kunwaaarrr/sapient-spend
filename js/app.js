@@ -75,6 +75,7 @@ function renderView() {
     account:  () => registerView.render(viewEl, { accountId: r.params[0] }),
     reports:  () => reportsView.render(viewEl, { report: r.params[0] || 'spending' }),
     loans:    () => loansView.render(viewEl, { accountId: r.params[0] || null }),
+    'loan-account': () => loansView.render(viewEl, { accountId: r.params[0] || null, context: 'accounts' }),
     settings: () => settingsView.render(viewEl, {}),
     fifty:    () => fiftyView.render(viewEl, { month: r.params[0] || thisMonth() }),
     forecast: () => forecastView.render(viewEl, {}),
@@ -132,7 +133,7 @@ function renderTabbar(route) {
   const map = {
     budget: 'plan',
     spending: 'spending',
-    account: 'accounts', accounts: 'accounts',
+    account: 'accounts', accounts: 'accounts', 'loan-account': 'accounts',
     reports: 'reflect', fifty: 'reflect', forecast: 'reflect', loans: 'reflect',
   };
   document.querySelectorAll('#tabbar button').forEach(b =>

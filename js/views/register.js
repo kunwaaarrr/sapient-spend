@@ -113,13 +113,16 @@ export function renderAccountsOverview(root) {
     </section>`}
     <div class="accounts-groups">${groupHtml}</div>
     <div class="accounts-overview-actions">
-      <button id="accounts-add-bottom" class="accounts-wide-action"><span aria-hidden="true">⊕</span> Add Account</button>
-      <button id="accounts-bank" class="accounts-wide-action"><span aria-hidden="true">▥</span> Manage Bank Connections</button>
+      <button id="accounts-add-bottom" class="accounts-wide-action"><span aria-hidden="true">${ICONS.addCircle}</span> Add Account</button>
+      <button id="accounts-bank" class="accounts-wide-action"><span aria-hidden="true">${ICONS.accounts}</span> Manage Bank Connections</button>
     </div>
   </div>`;
 
   root.querySelectorAll('[data-account-id]').forEach(row => {
-    row.onclick = () => navigate(`#/account/${row.dataset.accountId}`);
+    row.onclick = () => {
+      const account = store.state.accounts.find(item => item.id === row.dataset.accountId);
+      navigate(account?.loanInfo ? `#/loan-account/${row.dataset.accountId}` : `#/account/${row.dataset.accountId}`);
+    };
   });
   root.querySelector('#accounts-add-top').onclick = openAddAccountModal;
   root.querySelector('#accounts-add-bottom').onclick = openAddAccountModal;
@@ -154,12 +157,13 @@ function openBankConnectionsInfo() {
 }
 
 function openAccountsMore() {
-  const modal = openModal(h`<h2>Account options</h2>
-    <div class="accounts-modal-menu">
-      <button class="accounts-modal-row" id="accounts-more-add">Add an account</button>
-      <button class="accounts-modal-row" id="accounts-more-bank">Bank connections</button>
-      <button class="accounts-modal-row" id="accounts-more-spending">Open all spending</button>
+  const modal = openModal(h`<h2 class="mobile-options-title">Account options</h2>
+    <div class="mobile-options-menu">
+      <button class="mobile-options-row" id="accounts-more-add"><span class="mobile-options-row-main"><span class="mobile-options-icon" aria-hidden="true">${ICONS.addCircle}</span>Add an account</span></button>
+      <button class="mobile-options-row" id="accounts-more-bank"><span class="mobile-options-row-main"><span class="mobile-options-icon" aria-hidden="true">${ICONS.accounts}</span>Bank connections</span></button>
+      <button class="mobile-options-row" id="accounts-more-spending"><span class="mobile-options-row-main"><span class="mobile-options-icon" aria-hidden="true">${ICONS.spending}</span>Open all spending</span></button>
     </div>`);
+  modal.classList.add('mobile-options-modal');
   modal.querySelector('#accounts-more-add').onclick = () => { closeModal(); openAddAccountModal(); };
   modal.querySelector('#accounts-more-bank').onclick = () => { closeModal(); openBankConnectionsInfo(); };
   modal.querySelector('#accounts-more-spending').onclick = () => { closeModal(); navigate('#/spending'); };
@@ -296,10 +300,10 @@ function spendingCategory(transaction) {
 function openSpendingMore(root) {
   const modal = openModal(h`<h2 class="mobile-options-title">Spending options</h2>
     <div class="mobile-options-menu">
-      <button class="mobile-options-row" id="spending-more-filter">${spendingOnlyUncleared ? 'Show all transactions' : 'Show uncleared only'}</button>
-      <button class="mobile-options-row" id="spending-more-scheduled">${spendingScheduledOpen ? 'Hide scheduled transactions' : 'Scheduled transactions'}</button>
-      <button class="mobile-options-row" id="spending-more-add">Add a transaction</button>
-      <button class="mobile-options-row" id="spending-more-settings">Settings &amp; privacy <span aria-hidden="true">›</span></button>
+      <button class="mobile-options-row" id="spending-more-filter"><span class="mobile-options-row-main"><span class="mobile-options-icon" aria-hidden="true">${ICONS.filter}</span>${spendingOnlyUncleared ? 'Show all transactions' : 'Show uncleared only'}</span></button>
+      <button class="mobile-options-row" id="spending-more-scheduled"><span class="mobile-options-row-main"><span class="mobile-options-icon" aria-hidden="true">${ICONS.clock}</span>${spendingScheduledOpen ? 'Hide scheduled transactions' : 'Scheduled transactions'}</span></button>
+      <button class="mobile-options-row" id="spending-more-add"><span class="mobile-options-row-main"><span class="mobile-options-icon" aria-hidden="true">${ICONS.addCircle}</span>Add a transaction</span></button>
+      <button class="mobile-options-row" id="spending-more-settings"><span class="mobile-options-row-main"><span class="mobile-options-icon" aria-hidden="true">${ICONS.settings}</span>Settings &amp; privacy</span><span aria-hidden="true">›</span></button>
     </div>`);
   modal.classList.add('mobile-options-modal');
   modal.querySelector('#spending-more-filter').onclick = () => { closeModal(); spendingOnlyUncleared = !spendingOnlyUncleared; renderSpendingOverview(root); };
@@ -315,6 +319,7 @@ export function render(root, { accountId }) {
   curAccountId = accountId;
   const account = accountId ? store.state.accounts.find(a => a.id === accountId) : null;
   if (accountId && !account) { navigate('#/accounts'); return; }
+  if (isMobile() && account?.loanInfo) { navigate(`#/loan-account/${account.id}`); return; }
 
   const txs = gatherTxs(accountId);
   const filtered = applyFilter(sortTxs(txs));
@@ -500,19 +505,22 @@ function renderSchedCard(s, accountId) {
   const payee = s.payeeId ? store.getPayee(s.payeeId) : null;
   const acc = store.state.accounts.find(a => a.id === s.accountId);
   const frequency = FREQ_LABEL[s.frequency] || s.frequency;
-  const context = [!accountId && acc ? acc.name : null, s.memo].filter(Boolean).join(' · ');
+  const shortDate = s.nextDate ? `${s.nextDate.slice(8, 10)}/${s.nextDate.slice(5, 7)}/${s.nextDate.slice(2, 4)}` : '';
   return h`<div class="sched-row sched-card" data-id="${s.id}">
     <div class="sched-card-top">
-      <span class="sched-card-icon" aria-hidden="true">↻</span>
+      <span class="sched-card-icon" aria-hidden="true">${ICONS.clock}</span>
       <div class="sched-card-info">
         <div class="sched-card-payee">${payee ? payee.name : '(no payee)'}</div>
-        <div class="sched-card-schedule"><span>${frequency}</span><strong>Next ${fmtDate(s.nextDate)}</strong></div>
-        ${context ? `<div class="sched-card-meta">${context}</div>` : ''}
+        <div class="sched-card-schedule">${s.memo ? `<span>${s.memo}</span>` : ''}<small>${frequency}</small></div>
       </div>
-      <div class="sched-card-amt ${s.amount > 0 ? 'pos-text' : 'neg-text'}">${fmt(s.amount)}</div>
+      <div class="sched-card-side">
+        <strong class="sched-card-next">Next: ${shortDate}</strong>
+        <div class="sched-card-amt ${s.amount > 0 ? 'pos-text' : 'neg-text'}">${fmt(s.amount)}</div>
+        <div class="sched-card-account">${acc?.name || ''}</div>
+      </div>
     </div>
     <div class="sched-card-actions">
-      <button class="sched-enter">Enter now <span aria-hidden="true">›</span></button>
+      <button class="sched-enter">Enter now</button>
       <span class="sched-card-spacer"></span>
       <button class="icon-btn sched-edit" aria-label="Edit scheduled transaction">${SCHED_ICO_EDIT}</button>
       <button class="icon-btn sched-del" aria-label="Delete scheduled transaction">${SCHED_ICO_DEL}</button>
