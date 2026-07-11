@@ -2,6 +2,7 @@ import { store, INFLOW } from '../store.js';
 import { openModal, closeModal, toast, navigate } from '../app.js';
 import { fmt, fmtExact, parseAmount, todayISO, fmtDate, h, esc, debounce, addMonths, ICONS } from '../util.js';
 import { simulateBankFeed } from '../seed.js';
+import { parseStatement, buildTxns } from '../lib/csv.js';
 
 const FLAGS = ['red', 'orange', 'yellow', 'green', 'blue', 'purple'];
 const FREQ_LABEL = {
@@ -700,7 +701,7 @@ function wireToolbar(root, accountId, account) {
     render(root, { accountId });
   };
   root.querySelector('#link-account-btn').onclick = () => openLinkAccountModal(accountId);
-  root.querySelector('#file-import-btn').onclick = () => openFileImportModal();
+  root.querySelector('#file-import-btn').onclick = () => openFileImportModal(accountId);
   root.querySelector('#undo-btn').onclick = () => { if (store.canUndo()) store.undo(); };
   // Redo is permanently disabled — store has no redo stack. ponytail: add a redo stack if this ever matters.
 
@@ -741,25 +742,84 @@ function openLinkAccountModal(accountId) {
   });
 }
 
-function openFileImportModal() {
+function openFileImportModal(accountId) {
+  const accounts = store.state.accounts.filter(a => !a.closed);
+  const defaultAcc = accountId || accounts[0]?.id;
   openModal(h`<h2>File Import</h2>
-    <div class="form-row"><label>Import plan backup (JSON)</label><input id="fi-file" type="file" accept=".json"></div>
+    <div class="form-row"><label>Bank statement (CSV) or plan backup (JSON)</label><input id="fi-file" type="file" accept=".csv,.json,text/csv,application/json"></div>
+    <div id="fi-csv" hidden>
+      <div class="form-row"><label>Into account</label>
+        <select id="fi-account">${accounts.map(a => `<option value="${a.id}" ${a.id === defaultAcc ? 'selected' : ''}>${esc(a.name)}</option>`).join('')}</select>
+      </div>
+      <div id="fi-mapping"></div>
+      <div class="form-row"><label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input id="fi-flip" type="checkbox" style="width:auto">Flip signs (statement shows spending as positive)</label></div>
+      <div id="fi-preview"></div>
+    </div>
     <div class="modal-actions">
       <button class="btn secondary" id="fi-cancel">Cancel</button>
       <button class="btn" id="fi-import">Import</button>
     </div>`, {
     onOpen: modal => {
       modal.querySelector('#fi-cancel').onclick = closeModal;
+      let csv = null; // { rows, columns, dataStart } once a CSV is chosen
+
+      const ROLES = [['date', 'Date'], ['amount', 'Amount'], ['debit', 'Debit'], ['credit', 'Credit'], ['description', 'Payee / description'], ['memo', 'Memo']];
+      const colLabel = c => csv.headers?.[c]?.trim() || `Column ${c + 1} (${(csv.rows[csv.dataStart]?.[c] ?? '').slice(0, 18)})`;
+
+      const renderCsv = () => {
+        const width = Math.max(...csv.rows.slice(csv.dataStart, csv.dataStart + 5).map(r => r.length), 0);
+        modal.querySelector('#fi-mapping').innerHTML = ROLES.map(([role, label]) => h`<div class="form-row"><label>${label}</label>
+          <select data-role="${role}"><option value="">—</option>${Array.from({ length: width }, (_, c) =>
+            `<option value="${c}" ${csv.columns[role] === c ? 'selected' : ''}>${esc(colLabel(c))}</option>`).join('')}</select></div>`).join('');
+        modal.querySelectorAll('#fi-mapping select').forEach(sel => sel.onchange = () => {
+          csv.columns[sel.dataset.role] = sel.value === '' ? undefined : +sel.value;
+          renderPreview();
+        });
+        renderPreview();
+      };
+
+      const renderPreview = () => {
+        const { txns, skipped } = buildTxns(csv.rows, csv.columns, { dataStart: csv.dataStart, flip: modal.querySelector('#fi-flip').checked });
+        modal.querySelector('#fi-preview').innerHTML = txns.length
+          ? h`<table class="fi-preview-table" style="width:100%;font-size:13px;margin:6px 0"><tbody>${txns.slice(0, 5).map(t =>
+              `<tr><td>${esc(fmtDate(t.date))}</td><td>${esc(t.payeeName || '—')}</td><td style="text-align:right">${esc(fmtExact(t.amount))}</td></tr>`).join('')}</tbody></table>
+            <p class="muted" style="font-size:13px">${txns.length} transaction${txns.length === 1 ? '' : 's'} ready${skipped ? ` · ${skipped} row${skipped === 1 ? '' : 's'} skipped (no date/amount)` : ''}</p>`
+          : h`<p class="muted" style="font-size:13px">No transactions detected — check the column mapping above.</p>`;
+      };
+
+      modal.querySelector('#fi-flip').onchange = () => { if (csv) renderPreview(); };
+      modal.querySelector('#fi-file').onchange = async e => {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (/\.csv$/i.test(file.name) || file.type === 'text/csv') {
+          try { csv = parseStatement(await file.text()); }
+          catch { toast('Could not read that CSV'); return; }
+          modal.querySelector('#fi-csv').hidden = false;
+          renderCsv();
+        } else {
+          csv = null;
+          modal.querySelector('#fi-csv').hidden = true;
+        }
+      };
+
       modal.querySelector('#fi-import').onclick = async () => {
         const file = modal.querySelector('#fi-file').files[0];
-        if (!file) { toast('Choose a .json file first'); return; }
+        if (!file) { toast('Choose a file first'); return; }
+        if (csv) {
+          const targetId = modal.querySelector('#fi-account').value;
+          const { txns } = buildTxns(csv.rows, csv.columns, { dataStart: csv.dataStart, flip: modal.querySelector('#fi-flip').checked });
+          if (!txns.length) { toast('No transactions to import — check the column mapping'); return; }
+          const { inserted, merged, skipped } = store.importTransactions(targetId, txns);
+          closeModal();
+          toast(`${inserted} imported${merged ? `, ${merged} matched to existing` : ''}${skipped ? `, ${skipped} already imported` : ''}`);
+          return;
+        }
         if (!confirm('This will replace your current plan data. Continue?')) return;
-        const text = await file.text();
         try {
-          store.importJSON(text);
+          store.importJSON(await file.text());
           closeModal();
           toast('Plan backup imported');
-        } catch (e) {
+        } catch {
           toast('Could not read that file');
         }
       };
