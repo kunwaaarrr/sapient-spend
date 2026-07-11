@@ -746,7 +746,7 @@ function openFileImportModal(accountId) {
   const accounts = store.state.accounts.filter(a => !a.closed);
   const defaultAcc = accountId || accounts[0]?.id;
   openModal(h`<h2>File Import</h2>
-    <div class="form-row"><label>Bank statement (CSV) or plan backup (JSON)</label><input id="fi-file" type="file" accept=".csv,.json,text/csv,application/json"></div>
+    <div class="form-row"><label>Bank statement (CSV) or plan backup (JSON)</label><input id="fi-file" type="file"></div>
     <div id="fi-csv" hidden>
       <div class="form-row"><label>Into account</label>
         <select id="fi-account">${accounts.map(a => `<option value="${a.id}" ${a.id === defaultAcc ? 'selected' : ''}>${esc(a.name)}</option>`).join('')}</select>
@@ -791,14 +791,15 @@ function openFileImportModal(accountId) {
       modal.querySelector('#fi-file').onchange = async e => {
         const file = e.target.files[0];
         if (!file) return;
-        if (/\.csv$/i.test(file.name) || file.type === 'text/csv') {
-          try { csv = parseStatement(await file.text()); }
-          catch { toast('Could not read that CSV'); return; }
-          modal.querySelector('#fi-csv').hidden = false;
-          renderCsv();
-        } else {
+        // .json = plan backup; anything else (csv, txt, whatever the bank exports) tries the statement parser
+        if (/\.json$/i.test(file.name) || file.type === 'application/json') {
           csv = null;
           modal.querySelector('#fi-csv').hidden = true;
+        } else {
+          try { csv = parseStatement(await file.text()); }
+          catch { toast('Could not read that file as a statement'); return; }
+          modal.querySelector('#fi-csv').hidden = false;
+          renderCsv();
         }
       };
 
