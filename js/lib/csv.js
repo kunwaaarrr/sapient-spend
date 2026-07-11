@@ -190,9 +190,58 @@ export function detectMapping(rows) {
   return { columns: map, headers, dataStart };
 }
 
-// ---------- assembly ----------
+// ---------- payee cleanup ----------
 
 const clean = s => String(s ?? '').replace(/\s+/g, ' ').trim();
+
+// payment-rail prefixes banks prepend to the merchant name
+const RAIL_PREFIX = /^(visa|eftpos|pos|debit card|credit card|card|atm)?\s*(purchase|payment|withdrawal|debit|credit)\s+(at\s+|-\s*|:\s*)?|^(eftpos|direct debit|direct credit|bpay|osko|payid|internet banking|internet transfer|transfer (to|from)|tfr(\s+to|\s+from)?|dd|pymt)\s+/i;
+// card processors that prefix the real merchant: "SQ *COFFEE", "PAYPAL *STEAM"
+const PROCESSOR_PREFIX = /^(sq|square|pp|paypal|google|apple|amzn mktp|zip|afterpay|stripe)\s*\*\s*/i;
+// tokens that are reference noise rather than name: store numbers, card refs, #123, 12/07-style dates
+const NOISE_TOKEN = /^(\d{2,}|[x*]{2,}\d+|#\d+|\d{1,2}[\/\-.]\d{1,2}([\/\-.]\d{2,4})?)$/i;
+// trailing state/country/reference words, stripped repeatedly from the end
+const TRAIL_WORD = /^(aus?|usa?|gbr?|uk|nzl?|can|nsw|ns|vic|vi|qld|ql|wa|sa|tas|ta|act|nt|card|ref|reference|receipt|rcpt|no|value|date|pty|ltd|p\/l|inc|llc|gmbh)$/i;
+const TLD = /([a-z0-9\-]+)\.(com|net|org|co|io|app|shop|dev|au|nz|uk|ca|us|gov|edu)(\.[a-z]{2,3})?([\/?#]\S*)?$/i;
+
+// "WOOLWORTHS 1234 SYDNEY NS AUS Card xx1234" -> "Woolworths"
+// "UBER *TRIP HELP.UBER.COM" -> "Uber Trip"; "DIRECT DEBIT NETFLIX.COM 123" -> "Netflix"
+export function cleanPayeeName(raw) {
+  const original = clean(raw);
+  let s = original;
+  for (let i = 0; i < 3; i++) s = s.replace(RAIL_PREFIX, '').replace(PROCESSOR_PREFIX, '');
+  s = s.replace(/\s*\*\s*/g, ' '); // remaining processor stars: "UBER *TRIP" -> "UBER TRIP"
+
+  let tokens = clean(s).split(' ')
+    .map(t => t.replace(/^[\/:;,‑–-]+|[\/:;,‑–-]+$/g, ''))
+    .filter(Boolean);
+
+  // a standalone number after the name starts the store#/location/ref tail — cut it all
+  const cut = tokens.findIndex((t, i) => i > 0 && NOISE_TOKEN.test(t));
+  if (cut > 0) tokens = tokens.slice(0, cut);
+  tokens = tokens.filter(t => !NOISE_TOKEN.test(t));
+
+  // domain tokens are noise next to a real name ("UBER *TRIP HELP.UBER.COM"),
+  // but when the domain IS the name ("NETFLIX.COM") keep its merchant label
+  const isDomain = t => t.includes('.') && TLD.test(t);
+  if (tokens.some(t => !isDomain(t))) tokens = tokens.filter(t => !isDomain(t));
+  else tokens = tokens.map(t => isDomain(t) ? t.match(TLD)[1] : t);
+  while (tokens.length > 1 && TRAIL_WORD.test(tokens[tokens.length - 1])) tokens.pop();
+
+  const out = tokens.join(' ');
+  if (!out) return original; // cleaned everything away — raw is better than nothing
+  return /[a-z]/.test(out) ? out : titleCase(out); // only re-case shouty all-caps names
+}
+
+// title-case 4+ letter words; keep short all-caps (BP, ANZ, KFC) and words with digits as-is —
+// except short words that are plainly English, not abbreviations
+const SHORT_WORD = /^(the|and|for|of|at|to|on|in|fee|tax|pay|new|old|one|two|six|ten|out|bar|inn|gas|oil|car|cab|st|rd|ave|hwy)$/i;
+function titleCase(s) {
+  return s.split(' ').map(w => w.split('-').map(p =>
+    (/\d/.test(p) || (p.length < 4 && !SHORT_WORD.test(p))) ? p : p[0] + p.slice(1).toLowerCase()).join('-')).join(' ');
+}
+
+// ---------- assembly ----------
 
 // rows + mapping -> { txns: [{date, amount, payeeName, memo, importId}], skipped }
 // importId is YNAB-style csv:<amount>:<date>:<occurrence> so re-importing an overlapping statement dedupes.
@@ -216,6 +265,7 @@ export function buildTxns(rows, columns, { dataStart = 0, flip = false } = {}) {
     let payeeName = clean(columns.description != null ? r[columns.description] : '');
     let memo = clean(columns.memo != null ? r[columns.memo] : '');
     if (!payeeName && memo) { payeeName = memo; memo = ''; }
+    payeeName = cleanPayeeName(payeeName);
     const key = `${amount}:${date}`;
     occ[key] = (occ[key] || 0) + 1;
     txns.push({ date, amount, payeeName, memo, importId: `csv:${key}:${occ[key]}` });

@@ -8,7 +8,7 @@ globalThis.localStorage = {
   removeItem: k => { delete _ls[k]; },
 };
 
-const { parseCSV, parseMoney, parseDate, parseStatement, buildTxns } = await import('../js/lib/csv.js');
+const { parseCSV, parseMoney, parseDate, parseStatement, buildTxns, cleanPayeeName } = await import('../js/lib/csv.js');
 const { store } = await import('../js/store.js');
 
 function statement(text) {
@@ -48,7 +48,7 @@ const cba = statement(
 30/12/2025,"+500.00","Salary Deposit ACME PTY LTD","+1,241.46"
 29/12/2025,"-45.20","BP FUEL STATION","+741.46"`);
 assert.equal(cba.txns.length, 3);
-assert.deepEqual(cba.txns[0], { date: '2025-12-31', amount: -690, payeeName: 'WOOLWORTHS 1234 SYDNEY NS', memo: '', importId: 'csv:-690:2025-12-31:1' });
+assert.deepEqual(cba.txns[0], { date: '2025-12-31', amount: -690, payeeName: 'Woolworths', memo: '', importId: 'csv:-690:2025-12-31:1' });
 assert.equal(cba.txns[1].amount, 50000, 'balance column not mistaken for amount');
 
 // ---- 4. header + debit/credit columns (Westpac-style), preamble junk ----
@@ -65,7 +65,7 @@ assert.equal(wbc.txns.length, 3, 'preamble and totals rows skipped');
 assert.equal(wbc.skipped, 1);
 assert.equal(wbc.txns[0].amount, -5430, 'debit is an outflow');
 assert.equal(wbc.txns[1].amount, 250000, 'credit is an inflow');
-assert.equal(wbc.txns[0].payeeName, 'EFTPOS COLES 0842');
+assert.equal(wbc.txns[0].payeeName, 'Coles', 'rail prefix and store number stripped');
 
 // ---- 5. semicolon delimiter + comma decimals + non-English headers (content fallback) ----
 const eu = statement(
@@ -75,7 +75,7 @@ const eu = statement(
 assert.equal(eu.txns.length, 2);
 assert.equal(eu.txns[0].amount, -2345);
 assert.equal(eu.txns[1].amount, 190000);
-assert.equal(eu.txns[0].payeeName, 'REWE MARKT GMBH');
+assert.equal(eu.txns[0].payeeName, 'Rewe Markt');
 
 // ---- 6. quoted fields with embedded commas and newlines, CRLF ----
 const quoted = statement(
@@ -83,9 +83,9 @@ const quoted = statement(
 '01/07/2026,"SMITH, JONES & CO","-1,050.00"\r\n' +
 '02/07/2026,"LINE ONE\nLINE TWO",25.00\r\n');
 assert.equal(quoted.txns.length, 2);
-assert.equal(quoted.txns[0].payeeName, 'SMITH, JONES & CO');
+assert.equal(quoted.txns[0].payeeName, 'Smith Jones & CO');
 assert.equal(quoted.txns[0].amount, -105000);
-assert.equal(quoted.txns[1].payeeName, 'LINE ONE LINE TWO');
+assert.equal(quoted.txns[1].payeeName, 'Line One Line Two');
 
 // ---- 7. US month-first dates (day>12 anywhere in column decides for the whole file) ----
 const us = statement(
@@ -120,7 +120,7 @@ const r2 = store.importTransactions(acc, wbc.txns);
 assert.deepEqual({ inserted: r2.inserted, merged: r2.merged, skipped: r2.skipped }, { inserted: 0, merged: 0, skipped: 3 }, 're-import is a no-op');
 const imported = store.state.transactions.find(t => t.importId === wbc.txns[1].importId);
 assert.equal(imported.amount, 250000);
-assert.equal(store.state.payees.some(p => p.name === 'PAYROLL ACME'), true, 'payee auto-created');
+assert.equal(store.state.payees.some(p => p.name === 'Payroll Acme'), true, 'payee auto-created with cleaned name');
 
 // ---- 11. tab-delimited ----
 const tabs = statement('Date\tDescription\tAmount\n01/07/2026\tSHOP\t-4.50');
@@ -129,5 +129,32 @@ assert.equal(tabs.txns[0].amount, -450);
 // ---- 12. BOM + garbage-only file doesn't throw ----
 assert.equal(statement('﻿Date,Description,Amount\n01/07/2026,SHOP,-1.00').txns[0].amount, -100);
 assert.deepEqual(statement('hello\nworld').txns, []);
+
+// ---- 13. payee cleanup rules ----
+assert.equal(cleanPayeeName('WOOLWORTHS 1234 SYDNEY NS AUS Card xx1234'), 'Woolworths');
+assert.equal(cleanPayeeName('UBER *TRIP HELP.UBER.COM'), 'Uber Trip');
+assert.equal(cleanPayeeName('SQ *BLUE BOTTLE COFFEE'), 'Blue Bottle Coffee');
+assert.equal(cleanPayeeName('PAYPAL *STEAM GAMES 4029357733'), 'Steam Games');
+assert.equal(cleanPayeeName('DIRECT DEBIT NETFLIX.COM 123456789'), 'Netflix');
+assert.equal(cleanPayeeName('EFTPOS PURCHASE ALDI 42 KOGARAH'), 'Aldi');
+assert.equal(cleanPayeeName('VISA PURCHASE - COLES 0842 KOGARAH NSW'), 'Coles');
+assert.equal(cleanPayeeName('BP FUEL STATION KOGARAH'), 'BP Fuel Station Kogarah', 'short all-caps words like BP survive');
+assert.equal(cleanPayeeName('ANZ ATM WITHDRAWAL FEE'), 'ANZ ATM Withdrawal Fee');
+assert.equal(cleanPayeeName('TRANSFER TO SAVINGS ACCOUNT'), 'Savings Account');
+assert.equal(cleanPayeeName('MCDONALDS 0423 CARD 4321'), 'Mcdonalds');
+assert.equal(cleanPayeeName('AMAZON AU MARKETPLACE AMZN.COM.AU'), 'Amazon AU Marketplace', 'domain dropped next to real name');
+assert.equal(cleanPayeeName('NETFLIX.COM'), 'Netflix', 'lone domain keeps merchant label');
+assert.equal(cleanPayeeName('Salary Deposit ACME PTY LTD'), 'Salary Deposit ACME', 'mixed case not re-cased, PTY LTD trimmed');
+assert.equal(cleanPayeeName('7-ELEVEN 2196 SYDNEY'), '7-Eleven', 'digits inside name tokens survive');
+assert.equal(cleanPayeeName('GOOGLE *YouTubePremium g.co/helppay#'), 'YouTubePremium');
+assert.equal(cleanPayeeName('xx1234 5678'), 'xx1234 5678', 'falls back to raw when cleaning empties it');
+assert.equal(cleanPayeeName(''), '');
+// end-to-end: statement descriptions arrive cleaned
+const cleaned = statement(
+`Date,Description,Amount
+05/07/2026,"WOOLWORTHS 1234 SYDNEY NS AUS Card xx1234",-87.50
+06/07/2026,UBER *TRIP HELP.UBER.COM,-15.00`);
+assert.equal(cleaned.txns[0].payeeName, 'Woolworths');
+assert.equal(cleaned.txns[1].payeeName, 'Uber Trip');
 
 console.log('csv-check: all assertions passed');
