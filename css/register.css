@@ -436,6 +436,83 @@
 .accounts-modal-row:last-child { border-bottom: none; }
 .accounts-modal-row:hover { background: var(--bg-alt); }
 
+/* ================= mobile Account detail ================= */
+.mobile-account-detail { min-height: 100%; background: var(--app-cream); padding-bottom: 28px; }
+.mobile-account-head { padding: 9px 12px 7px; gap: 8px; }
+.mobile-account-back {
+  width: 30px; flex: 0 0 30px; display: inline-flex; align-items: center; justify-content: flex-start;
+  font-size: 33px; font-weight: 300; line-height: 1; color: var(--text);
+}
+.mobile-account-head-copy { flex: 1; min-width: 0; }
+.mobile-account-kicker { font-size: 10px; line-height: 1.1; text-transform: uppercase; letter-spacing: .08em; color: var(--text-dim); font-weight: 700; }
+.mobile-account-head h1 { margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 20px; line-height: 1.15; font-weight: 700; }
+.mobile-account-head-action { width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; border-radius: 11px; }
+.mobile-account-head-action:active { background: var(--accounts-action-bg); }
+.mobile-account-head-action .ico { width: 20px; height: 20px; }
+.mobile-account-menu-wrap .view-menu { top: calc(100% + 2px); }
+.mobile-account-content { padding: 8px 14px 0; }
+.mobile-account-hero {
+  position: relative; overflow: hidden; padding: 16px 16px 14px; border-radius: 22px;
+  background: var(--bg); box-shadow: 0 3px 12px rgba(20,30,70,.06); text-align: center;
+}
+.mobile-account-hero::before {
+  content: ''; position: absolute; inset: 0 0 auto; height: 5px; background: var(--blue);
+}
+.mobile-account-hero-top { display: flex; align-items: center; justify-content: space-between; }
+.mobile-account-glyph {
+  width: 38px; height: 38px; border-radius: 13px; display: inline-flex; align-items: center; justify-content: center;
+  background: var(--accounts-glyph-bg); color: var(--green); border: 1px solid var(--accounts-glyph-line); font-size: 17px; font-weight: 750;
+}
+.mobile-account-favourite { width: 36px; height: 36px; border-radius: 12px; color: var(--text-faint); font-size: 23px; }
+.mobile-account-favourite.active { color: var(--orange); }
+.mobile-account-favourite:active { background: var(--bg-alt); }
+.mobile-account-balance { margin-top: -19px; font-size: 31px; line-height: 1.12; font-weight: 780; letter-spacing: -.7px; font-variant-numeric: tabular-nums; }
+.mobile-account-balance-label { margin-top: 2px; color: var(--text-dim); font-size: 12px; }
+.mobile-account-balance-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; margin-top: 15px; padding: 12px 0; border-top: 1px solid var(--line-subtle); border-bottom: 1px solid var(--line-subtle); }
+.mobile-account-balance-grid > div { display: flex; flex-direction: column; gap: 3px; }
+.mobile-account-balance-grid > div + div { border-left: 1px solid var(--line-subtle); }
+.mobile-account-balance-grid span { color: var(--text-dim); font-size: 11px; }
+.mobile-account-balance-grid strong { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.mobile-account-status { margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--text-dim); font-size: 11px; }
+.mobile-account-status > span { width: 17px; height: 17px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: var(--accounts-glyph-bg); color: var(--green); font-size: 10px; font-weight: 800; }
+.mobile-account-note.reg-note { max-width: none; min-height: 0; margin: 9px auto 0; border: 0; color: var(--text-dim); font-size: 12px; }
+.mobile-account-note.reg-note:empty::before { display: inline-block; padding: 4px 10px; border-radius: 999px; background: var(--bg-alt); opacity: 1; }
+.mobile-account-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 11px; }
+.mobile-account-actions button { min-width: 0; min-height: 72px; padding: 9px 3px 8px; border-radius: 18px; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 2px 8px rgba(20,30,70,.04); color: var(--blue); }
+.mobile-account-actions button:active { background: var(--chip-active-bg); }
+.mobile-account-actions button > span { width: 30px; height: 30px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; background: var(--chip-active-bg); font-size: 16px; font-weight: 800; }
+.mobile-account-actions .ico { width: 17px; height: 17px; }
+.mobile-account-actions strong { overflow: hidden; text-overflow: ellipsis; max-width: 100%; font-size: 11px; color: var(--text); font-weight: 650; }
+.mobile-account-undo { margin: 10px auto 0; min-height: 30px; display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--link); font-size: 12px; }
+.mobile-account-undo .ico { width: 14px; height: 14px; }
+.mobile-account-undo:disabled { display: none; }
+.mobile-account-approval { width: 100%; min-height: 48px; margin-top: 11px; padding: 10px 14px; border-radius: 16px; display: flex; align-items: center; justify-content: space-between; background: var(--chip-active-bg); color: var(--blue-dark); text-align: left; font-size: 13px; }
+.mobile-account-approval strong { display: inline-flex; min-width: 24px; height: 24px; margin-right: 5px; padding: 0 7px; align-items: center; justify-content: center; border-radius: 999px; background: var(--blue); color: var(--on-brand); }
+.mobile-account-approval > span:last-child { font-size: 24px; line-height: 1; }
+.mobile-account-detail .sched-section { margin-top: 15px; border: 0; background: transparent; }
+.mobile-account-detail .sched-head { padding: 0 2px 8px; color: var(--text); font-size: 14px; }
+.mobile-account-detail .sched-list { padding: 0; gap: 9px; }
+.mobile-account-detail .sched-card { border-radius: 18px; box-shadow: 0 2px 8px rgba(20,30,70,.05); }
+.mobile-account-transactions { margin: 19px -14px 0; }
+.mobile-account-section-head { padding: 0 16px 9px; display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.mobile-account-section-head h2 { font-size: 17px; font-weight: 750; }
+.mobile-account-section-head span { color: var(--text-dim); font-size: 11px; }
+.mobile-account-search { height: 42px; margin: 0 14px 13px; padding: 0 12px; border-radius: 14px; display: flex; align-items: center; gap: 9px; background: var(--bg); box-shadow: 0 2px 8px rgba(20,30,70,.04); }
+.mobile-account-search > span { color: var(--text-faint); display: inline-flex; }
+.mobile-account-search .ico { width: 17px; height: 17px; }
+.mobile-account-search .reg-search { min-width: 0; width: 100%; padding: 0; border: 0; background: transparent; font-size: 14px; }
+.mobile-account-search .reg-search:focus { outline: 0; }
+.mobile-account-detail .reg-mobile-list { padding: 0 14px 64px; display: flex; flex-direction: column; gap: 14px; }
+.mobile-account-detail .mobile-date-head { padding: 0 3px 6px; font-size: 11px; }
+.mobile-account-detail .mobile-date-group { overflow: hidden; border-radius: 18px; background: var(--bg); box-shadow: 0 2px 8px rgba(20,30,70,.04); }
+.mobile-account-detail .mobile-date-group .mobile-date-head { background: var(--app-cream); }
+.mobile-account-detail .mobile-row { min-height: 58px; padding: 10px 13px; border-bottom-color: var(--line-subtle); }
+.mobile-account-detail .mobile-row:last-child { border-bottom: 0; }
+.mobile-account-detail .mobile-row:active { background: var(--bg-alt); }
+.mobile-account-detail .mobile-payee { font-size: 14.5px; }
+.mobile-account-detail .mobile-sub { max-width: 185px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mobile-account-detail .mobile-amount { font-size: 15px; font-variant-numeric: tabular-nums; }
+
 /* ================= mobile breakpoint ================= */
 @media (max-width: 767px) {
   .reg-head { padding: 10px 12px; }

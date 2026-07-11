@@ -328,6 +328,11 @@ export function render(root, { accountId }) {
   const scheduled = store.upcomingScheduled(accountId, 30);
   const bal = accountId ? store.accountBalances(accountId) : sumAllBalances();
 
+  if (isMobile() && account) {
+    renderMobileAccountDetail(root, { account, accountId, bal, filtered, scheduled, unapprovedCount });
+    return;
+  }
+
   root.innerHTML = h`
     <div class="reg-head view-head">
       <div class="reg-head-main">
@@ -391,6 +396,75 @@ export function render(root, { accountId }) {
   if (isMobile()) wireMobileList(root, filtered, accountId);
   else wireTable(root, filtered, accountId);
 
+  if (clipGalleryTx) openAttachmentGallery(clipGalleryTx);
+}
+
+function renderMobileAccountDetail(root, { account, accountId, bal, filtered, scheduled, unapprovedCount }) {
+  const typeLabel = TYPE_LABEL[account.type] || account.type;
+  const recon = account.lastReconciled ? `Reconciled ${fmtDate(account.lastReconciled)}` : 'Not yet reconciled';
+  const txLabel = `${filtered.length} transaction${filtered.length === 1 ? '' : 's'}`;
+
+  root.innerHTML = h`<div class="mobile-account-detail">
+    <header class="mobile-account-head mobile-page-head">
+      <button id="mobile-account-back" class="mobile-account-back mobile-head-action" aria-label="Back to accounts">‹</button>
+      <div class="mobile-account-head-copy">
+        <div class="mobile-account-kicker">${typeLabel}</div>
+        <h1>${account.name}</h1>
+      </div>
+      <button id="edit-account-btn" class="mobile-account-head-action mobile-head-action" aria-label="Edit account">${ICONS.edit}</button>
+      <div class="view-menu-wrap mobile-account-menu-wrap">
+        <button id="view-menu-btn" class="mobile-account-head-action mobile-head-action" aria-label="Account view options">${ICONS.moreVertical}</button>
+        ${viewMenuOpen ? renderViewMenu(true) : ''}
+      </div>
+    </header>
+
+    <div class="mobile-account-content">
+      <section class="mobile-account-hero">
+        <div class="mobile-account-hero-top">
+          <span class="mobile-account-glyph" aria-hidden="true">${accountGlyph(account)}</span>
+          <button class="mobile-account-favourite ${account.favorite ? 'active' : ''}" id="fav-toggle" aria-label="${account.favorite ? 'Remove from favourites' : 'Add to favourites'}">${account.favorite ? '★' : '☆'}</button>
+        </div>
+        <div class="mobile-account-balance ${bal.working < 0 ? 'neg-text' : 'pos-text'}">${fmt(bal.working)}</div>
+        <div class="mobile-account-balance-label">Working balance</div>
+        <div class="mobile-account-balance-grid">
+          <div><span>Cleared</span><strong class="${bal.cleared < 0 ? 'neg-text' : ''}">${fmt(bal.cleared)}</strong></div>
+          <div><span>Uncleared</span><strong class="${bal.uncleared < 0 ? 'neg-text' : ''}">${fmt(bal.uncleared)}</strong></div>
+        </div>
+        <div class="mobile-account-status"><span aria-hidden="true">${account.lastReconciled ? '✓' : '○'}</span>${recon}</div>
+        <div class="mobile-account-note reg-note" id="reg-note" contenteditable="true" data-placeholder="Add a note">${account.note || ''}</div>
+      </section>
+
+      <section class="mobile-account-actions" aria-label="Account actions">
+        <button id="add-tx-btn"><span>${ICONS.addCircle}</span><strong>Add</strong></button>
+        <button id="reconcile-btn"><span>✓</span><strong>Reconcile</strong></button>
+        <button id="file-import-btn"><span>${ICONS.download}</span><strong>Import</strong></button>
+        <button id="link-account-btn"><span>${ICONS.accounts}</span><strong>Link</strong></button>
+      </section>
+
+      <button id="undo-btn" class="mobile-account-undo" ${store.canUndo() ? '' : 'disabled'}>${ICONS.undo}<span>Undo last change</span></button>
+      <button id="redo-btn" hidden disabled>Redo</button>
+
+      ${unapprovedCount ? `<button class="mobile-account-approval" id="approval-banner"><span><strong>${unapprovedCount}</strong> transaction${unapprovedCount === 1 ? '' : 's'} need approval</span><span aria-hidden="true">›</span></button>` : ''}
+
+      ${scheduled.length ? renderScheduledSection(scheduled, accountId) : ''}
+
+      <section class="mobile-account-transactions">
+        <div class="mobile-account-section-head"><h2>Transactions</h2><span>${txLabel}</span></div>
+        <label class="mobile-account-search">
+          <span aria-hidden="true">${ICONS.search}</span>
+          <input class="reg-search" id="reg-search" type="search" aria-label="Search ${account.name}" placeholder="Search transactions" value="${search}">
+        </label>
+        ${renderMobileList(filtered, accountId)}
+      </section>
+    </div>
+  </div>`;
+
+  root.querySelector('#mobile-account-back').onclick = () => navigate('#/accounts');
+  wireHead(root, account, accountId);
+  wireToolbar(root, accountId, account);
+  wireScheduled(root, accountId);
+  wireBulkBar(root, accountId);
+  wireMobileList(root, filtered, accountId);
   if (clipGalleryTx) openAttachmentGallery(clipGalleryTx);
 }
 
@@ -693,26 +767,30 @@ function openReconcileModal(accountId) {
 
 // ---------- toolbar wiring ----------
 function wireToolbar(root, accountId, account) {
-  root.querySelector('#add-tx-btn').onclick = () => {
+  const addBtn = root.querySelector('#add-tx-btn');
+  if (addBtn) addBtn.onclick = () => {
     if (isMobile()) { openAddTransactionModal(accountId); return; }
     editingId = 'new';
     editState = blankEdit(accountId);
     datePopoverOpen = false; categoryPopoverOpen = false; flagPopoverOpen = false;
     render(root, { accountId });
   };
-  root.querySelector('#link-account-btn').onclick = () => openLinkAccountModal(accountId);
-  root.querySelector('#file-import-btn').onclick = () => openFileImportModal(accountId);
-  root.querySelector('#undo-btn').onclick = () => { if (store.canUndo()) store.undo(); };
+  const linkBtn = root.querySelector('#link-account-btn');
+  if (linkBtn) linkBtn.onclick = () => openLinkAccountModal(accountId);
+  const importBtn = root.querySelector('#file-import-btn');
+  if (importBtn) importBtn.onclick = () => openFileImportModal(accountId);
+  const undoBtn = root.querySelector('#undo-btn');
+  if (undoBtn) undoBtn.onclick = () => { if (store.canUndo()) store.undo(); };
   // Redo is permanently disabled — store has no redo stack. ponytail: add a redo stack if this ever matters.
 
   const searchEl = root.querySelector('#reg-search');
-  searchEl.oninput = debounce(() => { search = searchEl.value; render(root, { accountId }); }, 200);
+  if (searchEl) searchEl.oninput = debounce(() => { search = searchEl.value; render(root, { accountId }); }, 200);
 
   const banner = root.querySelector('#approval-banner');
   if (banner) banner.onclick = () => { filter = 'unapproved'; render(root, { accountId }); };
 
   const viewBtn = root.querySelector('#view-menu-btn');
-  viewBtn.onclick = e => { e.stopPropagation(); viewMenuOpen = !viewMenuOpen; render(root, { accountId }); };
+  if (viewBtn) viewBtn.onclick = e => { e.stopPropagation(); viewMenuOpen = !viewMenuOpen; render(root, { accountId }); };
   const vmMemo = root.querySelector('#vm-memo');
   if (vmMemo) vmMemo.onchange = () => { showMemoCol = vmMemo.checked; localStorage.setItem('ss-reg-show-memo', showMemoCol ? '1' : '0'); render(root, { accountId }); };
   const vmReconciled = root.querySelector('#vm-reconciled');
