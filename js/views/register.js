@@ -1596,7 +1596,7 @@ export function openAddTransactionModal(presetAccountId, editTxId) {
   // carried through untouched on save so editing a tx here never silently drops its photos.
   const attachments = editing ? (editing.attachments || []) : [];
   let recurring = 'none';
-  let panel = null; // null | 'payee' | 'category' | 'account' | 'date' | 'flag'
+  let panel = null; // null | 'payee' | 'category' | 'account' | 'date' | 'flag' | 'repeat'
   let payeeQuery = '';
   let categoryQuery = '';
   let dateCursor = date.slice(0, 7);
@@ -1605,36 +1605,40 @@ export function openAddTransactionModal(presetAccountId, editTxId) {
 
   function rowPayee() {
     return h`<button type="button" class="txe-row" id="txe-row-payee">
-      <span class="txe-row-ico">🔁</span>
+      <span class="txe-row-ico">${ICONS.profile}</span>
       <span class="txe-row-body">
         <span class="txe-row-label">Payee</span>
         <span class="txe-row-value ${!payeeText ? 'txe-placeholder' : ''}">${payeeText || 'Choose Payee'}</span>
       </span>
       ${suggestedHint ? '<span class="txe-suggested-badge" title="Suggested from your location">📍</span>' : ''}
+      <span class="txe-row-chevron" aria-hidden="true">${ICONS.chevronDown}</span>
     </button>`;
   }
   function rowCategory() {
     const label = categoryId === INFLOW ? 'Ready to Assign' : (categoryId ? categoryName(categoryId) : 'Select category');
     return h`<button type="button" class="txe-row" id="txe-row-category">
-      <span class="txe-row-ico">🏷️</span>
+      <span class="txe-row-ico">${ICONS.tag}</span>
       <span class="txe-row-body"><span class="txe-row-label">Category</span><span class="txe-row-value ${!categoryId ? 'txe-placeholder' : ''}">${label}</span></span>
+      <span class="txe-row-chevron" aria-hidden="true">${ICONS.chevronDown}</span>
     </button>`;
   }
   function rowAccount() {
     return h`<button type="button" class="txe-row" id="txe-row-account">
-      <span class="txe-row-ico">🏦</span>
+      <span class="txe-row-ico">${ICONS.accounts}</span>
       <span class="txe-row-body"><span class="txe-row-label">Account</span><span class="txe-row-value">${esc(accountName(accountId))}</span></span>
+      <span class="txe-row-chevron" aria-hidden="true">${ICONS.chevronDown}</span>
     </button>`;
   }
   function rowDate() {
     return h`<button type="button" class="txe-row" id="txe-row-date">
-      <span class="txe-row-ico">📅</span>
+      <span class="txe-row-ico">${ICONS.calendar}</span>
       <span class="txe-row-body"><span class="txe-row-label">Date</span><span class="txe-row-value">${fmtDate(date)}</span></span>
+      <span class="txe-row-chevron" aria-hidden="true">${ICONS.chevronDown}</span>
     </button>`;
   }
   function rowMemo() {
     return h`<div class="txe-row txe-row-input">
-      <span class="txe-row-ico">📝</span>
+      <span class="txe-row-ico">${ICONS.edit}</span>
       <span class="txe-row-body"><span class="txe-row-label">Memo</span>
         <input type="text" id="txe-memo" class="txe-inline-input" value="${esc(memo)}" placeholder="Add a memo">
       </span>
@@ -1649,26 +1653,18 @@ export function openAddTransactionModal(presetAccountId, editTxId) {
   }
   function rowFlag() {
     return h`<button type="button" class="txe-row" id="txe-row-flag">
-      <span class="txe-row-ico">${flagIcon(flag)}</span>
+      <span class="txe-row-ico">${ICONS.flag}</span>
       <span class="txe-row-body"><span class="txe-row-label">Flag</span><span class="txe-row-value">${flag ? flag[0].toUpperCase() + flag.slice(1) : 'None'}</span></span>
+      <span class="txe-row-chevron" aria-hidden="true">${ICONS.chevronDown}</span>
     </button>`;
   }
   function rowRepeat() {
-    return h`<div class="txe-row txe-row-select">
-      <span class="txe-row-ico">🔁</span>
-      <span class="txe-row-body"><span class="txe-row-label">Repeat</span>
-        <select id="txe-repeat" class="txe-inline-select">
-          <option value="none" ${recurring === 'none' ? 'selected' : ''}>Never Repeat</option>
-          <option value="weekly" ${recurring === 'weekly' ? 'selected' : ''}>Weekly</option>
-          <option value="fortnightly" ${recurring === 'fortnightly' ? 'selected' : ''}>Fortnightly</option>
-          <option value="monthly" ${recurring === 'monthly' ? 'selected' : ''}>Monthly</option>
-          <option value="every2months" ${recurring === 'every2months' ? 'selected' : ''}>Every 2 Months</option>
-          <option value="quarterly" ${recurring === 'quarterly' ? 'selected' : ''}>Every 3 Months</option>
-          <option value="twiceayear" ${recurring === 'twiceayear' ? 'selected' : ''}>Every 6 Months</option>
-          <option value="yearly" ${recurring === 'yearly' ? 'selected' : ''}>Yearly</option>
-        </select>
-      </span>
-    </div>`;
+    const labels = { none: 'Never repeat', weekly: 'Weekly', fortnightly: 'Fortnightly', monthly: 'Monthly', every2months: 'Every 2 months', quarterly: 'Every 3 months', twiceayear: 'Every 6 months', yearly: 'Yearly' };
+    return h`<button type="button" class="txe-row" id="txe-row-repeat">
+      <span class="txe-row-ico">${ICONS.repeat}</span>
+      <span class="txe-row-body"><span class="txe-row-label">Repeat</span><span class="txe-row-value">${labels[recurring]}</span></span>
+      <span class="txe-row-chevron" aria-hidden="true">${ICONS.chevronDown}</span>
+    </button>`;
   }
 
   function payeeListItemsHtml() {
@@ -1753,19 +1749,28 @@ export function openAddTransactionModal(presetAccountId, editTxId) {
     return h`<div class="txe-list">${rows.join('')}</div>`;
   }
 
+  function repeatPanelHtml() {
+    const options = [['none', 'Never repeat'], ['weekly', 'Weekly'], ['fortnightly', 'Fortnightly'], ['monthly', 'Monthly'], ['every2months', 'Every 2 months'], ['quarterly', 'Every 3 months'], ['twiceayear', 'Every 6 months'], ['yearly', 'Yearly']];
+    return h`<div class="txe-list">${options.map(([value, label]) => h`<button class="txe-list-item ${recurring === value ? 'selected' : ''}" data-repeat="${value}"><span>${label}</span>${recurring === value ? '<b>✓</b>' : ''}</button>`).join('')}</div>`;
+  }
+
   function renderPanel() {
-    const titles = { payee: 'Choose Payee', category: 'Category', account: 'Account', date: 'Date', flag: 'Flag' };
+    const titles = { payee: 'Choose payee', category: 'Choose category', account: 'Choose account', date: 'Choose date', flag: 'Choose flag', repeat: 'Repeat transaction' };
     const body = panel === 'payee' ? payeePanelHtml()
       : panel === 'category' ? categoryPanelHtml()
       : panel === 'account' ? accountPanelHtml()
       : panel === 'date' ? datePanelHtml()
-      : panel === 'flag' ? flagPanelHtml() : '';
-    return h`<div class="txe-panel" id="txe-panel">
-      <div class="txe-panel-head">
-        <button type="button" class="txe-back" id="txe-panel-back">‹ Back</button>
-        <div class="txe-panel-title">${titles[panel] || ''}</div>
+      : panel === 'flag' ? flagPanelHtml()
+      : panel === 'repeat' ? repeatPanelHtml() : '';
+    return h`<div class="txe-panel-layer txe-panel-${panel}" id="txe-panel-layer">
+      <button type="button" class="txe-panel-scrim" id="txe-panel-dismiss" aria-label="Close picker"></button>
+      <div class="txe-panel" id="txe-panel" role="dialog" aria-modal="true" aria-labelledby="txe-panel-title">
+        <div class="txe-panel-head">
+          <button type="button" class="txe-back" id="txe-panel-back">‹</button>
+          <div class="txe-panel-title" id="txe-panel-title">${titles[panel] || ''}</div>
+        </div>
+        <div class="txe-panel-body">${body}</div>
       </div>
-      <div class="txe-panel-body">${body}</div>
     </div>`;
   }
 
@@ -1824,6 +1829,7 @@ export function openAddTransactionModal(presetAccountId, editTxId) {
 
   function wirePanel(m) {
     m.querySelector('#txe-panel-back').onclick = () => { panel = null; rerender(); };
+    m.querySelector('#txe-panel-dismiss').onclick = () => { panel = null; rerender(); };
     if (panel === 'payee') {
       const searchEl = m.querySelector('#txe-payee-search');
       const listEl = m.querySelector('#txe-payee-list');
@@ -1844,6 +1850,8 @@ export function openAddTransactionModal(presetAccountId, editTxId) {
       m.querySelectorAll('.cal-day').forEach(btn => { btn.onclick = () => { date = btn.dataset.date; panel = null; rerender(); }; });
     } else if (panel === 'flag') {
       m.querySelectorAll('[data-flag]').forEach(el => { el.onclick = () => { flag = el.dataset.flag || null; panel = null; rerender(); }; });
+    } else if (panel === 'repeat') {
+      m.querySelectorAll('[data-repeat]').forEach(el => { el.onclick = () => { recurring = el.dataset.repeat; panel = null; rerender(); }; });
     }
   }
 
@@ -1862,10 +1870,10 @@ export function openAddTransactionModal(presetAccountId, editTxId) {
     m.querySelector('#txe-row-account').onclick = () => { panel = 'account'; rerender(); };
     m.querySelector('#txe-row-date').onclick = () => { panel = 'date'; dateCursor = date.slice(0, 7); rerender(); };
     m.querySelector('#txe-row-flag').onclick = () => { panel = 'flag'; rerender(); };
+    m.querySelector('#txe-row-repeat').onclick = () => { panel = 'repeat'; rerender(); };
 
     m.querySelector('#txe-memo').oninput = e => { memo = e.target.value; };
     m.querySelector('#txe-cleared').onchange = e => { cleared = e.target.checked; };
-    m.querySelector('#txe-repeat').onchange = e => { recurring = e.target.value; };
 
     const delBtn = m.querySelector('#txe-delete');
     if (delBtn) delBtn.onclick = () => {

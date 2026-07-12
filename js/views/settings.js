@@ -19,7 +19,7 @@ export function render(root, params) {
   root.innerHTML = h`<div class="settings-overview">
     <div class="settings-inner">
       <header class="settings-overview-head mobile-page-head">
-        <a class="settings-back mobile-head-action" href="#/budget/${thisMonth()}" aria-label="Back to Plan">‹</a>
+        <a class="settings-back mobile-head-action" href="${innerWidth < 768 ? '#/profile' : `#/budget/${thisMonth()}`}" aria-label="${innerWidth < 768 ? 'Back to Profile' : 'Back to Plan'}">‹</a>
         <h1 class="mobile-page-title">Settings</h1>
         <span class="settings-head-spacer" aria-hidden="true"></span>
       </header>

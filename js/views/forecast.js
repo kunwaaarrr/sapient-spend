@@ -15,6 +15,7 @@ let v2ResultMode = 'chart';
 let v2ShowUnchanged = false;
 let v2ShowZero = false;
 let v2SpanOpen = false;
+let v2SummaryScrollBound = false;
 
 function emptyOverrides() { return { categories: {}, income: null, loanExtra: {} }; }
 
@@ -107,6 +108,7 @@ export function render(root, params) {
     root.innerHTML = v2Page(base, fc);
     wireHead(root);
     wireGrid(root);
+    bindV2SummaryScroll();
     return;
   }
 
@@ -271,6 +273,16 @@ function v2Page(base, fc) {
       </section>
     </main>
   </div>`;
+}
+
+function bindV2SummaryScroll() {
+  const scrollEl = document.getElementById('view');
+  const update = () => document.querySelector('.fcv2-sticky-summary')?.classList.toggle('scrolled', scrollEl.scrollTop > 36);
+  if (!v2SummaryScrollBound) {
+    scrollEl.addEventListener('scroll', update, { passive: true });
+    v2SummaryScrollBound = true;
+  }
+  requestAnimationFrame(update);
 }
 
 function rerender() { render(rootEl, { variant: currentVariant }); }

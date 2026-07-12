@@ -411,9 +411,19 @@
   .m-head { padding: 10px 14px 8px; }
   .m-month-wrap { position: relative; }
   .m-month { display: flex; align-items: center; gap: 8px; font-size: 23px; font-weight: 600; color: var(--text); letter-spacing: -.3px; }
-  .m-month-chev { width: 23px; height: 23px; border-radius: 50%; background: var(--text); color: var(--bg); display: inline-flex; align-items: center; justify-content: center; }
-  .m-month-chev .ico { width: 13px; height: 13px; }
-  .m-month-wrap .month-picker-popover { left: 0; transform: none; top: calc(100% + 8px); }
+  .m-month-chev { width: 20px; height: 23px; background: transparent; color: var(--text); display: inline-flex; align-items: center; justify-content: center; }
+  .m-month-chev .ico { width: 17px; height: 17px; stroke-width: 2.3; }
+  .m-month-wrap .month-picker-popover {
+    left: 0; transform: none; top: calc(100% + 8px); width: min(100vw - 28px, 360px); padding: 14px;
+    border: 1px solid var(--line-subtle); border-radius: 22px; background: var(--bg); box-shadow: var(--shadow);
+  }
+  .m-month-wrap .month-picker-popover .mp-year { margin-bottom: 13px; font-size: 20px; color: var(--text); }
+  .m-month-wrap .month-picker-popover .mp-year-btn { width: 34px; height: 34px; border: 0; color: var(--text-dim); font-size: 25px; }
+  .m-month-wrap .month-picker-popover .mp-year-btn:hover { background: var(--bg-alt); }
+  .m-month-wrap .month-picker-popover .mp-grid { grid-template-columns: repeat(3, 1fr); gap: 7px; }
+  .m-month-wrap .month-picker-popover .mp-cell { height: 54px; border-radius: 14px; color: var(--text-2); font-size: 17px; font-weight: 500; }
+  .m-month-wrap .month-picker-popover .mp-cell:hover { background: var(--bg-alt); }
+  .m-month-wrap .month-picker-popover .mp-cell.current { background: var(--bg-alt); color: var(--text); font-weight: 700; }
   .m-head-actions { gap: 8px; }
   .m-icon { color: var(--text); }
   .m-icon .ico { width: 22px; height: 22px; }
@@ -441,7 +451,7 @@
   /* ---- category list ---- */
   /* FAB clearance lives on the cream page, so the final category no longer leaves a white slab below it. */
   .m-list { margin-top: 11px; padding-bottom: 0; background: transparent; }
-  .m-group { display: flex; align-items: center; gap: 8px; background: var(--bg-alt); padding: 10px 14px; }
+  .m-group { display: flex; align-items: center; gap: 8px; background: var(--app-cream); padding: 10px 14px; }
   .m-group-chev { color: var(--text-2); display: inline-flex; flex-shrink: 0; }
   .m-group-chev .ico { width: 15px; height: 15px; }
   .m-group-name { flex: 1; font-size: 16px; font-weight: 700; color: var(--text); min-width: 0; }

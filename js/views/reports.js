@@ -24,6 +24,7 @@ const state = {
   openPopover: null, // 'date' | 'accounts' | 'categories' | null
   mobileFiltersOpen: false,
   mobileMenuOpen: false,
+  mobileMonthPicker: null,
 };
 
 function applyPreset(preset) {
@@ -246,7 +247,7 @@ function reflectOverview(root) {
             <a href="#/reports/income-expense"><span class="reflect-view-icon" aria-hidden="true">${ICONS.accounts}</span><span>Income v expense</span></a>
             <a href="#/reports/age-of-money"><span class="reflect-view-icon" aria-hidden="true">${ICONS.clock}</span><span>Age of money</span></a>
             <a href="#/fifty"><span class="reflect-view-icon" aria-hidden="true">${ICONS.fifty}</span><span>50/30/20</span></a>
-            <a href="#/forecast"><span class="reflect-view-icon" aria-hidden="true">${ICONS.forecast}</span><span>Forecast</span></a>
+            <a class="reflect-v1-link" href="#/forecast"><span class="reflect-view-icon" aria-hidden="true">${ICONS.forecast}</span><span>Forecast</span></a>
             <a href="#/what-if-v2"><span class="reflect-view-icon" aria-hidden="true">${ICONS.forecast}</span><span>What If v2</span></a>
             <a href="#/loans"><span class="reflect-view-icon" aria-hidden="true">${ICONS.loans}</span><span>Loan planner</span></a>
           </div>
@@ -354,13 +355,33 @@ function mobileFilterPanel(active) {
         <h3>Date range</h3>
         ${PRESETS.map(preset => `<button class="mobile-preset-row ${preset === state.preset ? 'active' : ''}" data-mobile-preset="${preset}"><span>${preset}</span><i>${preset === state.preset ? '✓' : ''}</i></button>`).join('')}
         <div class="mobile-custom-range">
-          <label>From<input type="month" id="mobile-from-month" value="${state.from}"></label>
-          <label>To<input type="month" id="mobile-to-month" value="${state.to}"></label>
+          ${mobileMonthField('from', state.from)}
+          ${mobileMonthField('to', state.to)}
         </div>
+        ${state.mobileMonthPicker ? mobileMonthPicker(state.mobileMonthPicker) : ''}
       </section>
       ${showCategories ? mobileFilterChecklist('categories', 'Categories', categories, state.categoryIds) : ''}
       ${showAccounts ? mobileFilterChecklist('accounts', 'Accounts', accounts, state.accountIds) : ''}
     </div>
+  </div>`;
+}
+
+function mobileMonthField(which, value) {
+  return h`<label>${which === 'from' ? 'From' : 'To'}
+    <button type="button" class="mobile-month-field" data-mobile-month-open="${which}">
+      <span>${monthLabel(value)}</span><span class="mobile-month-field-icon">${ICONS.calendar}</span>
+    </button>
+  </label>`;
+}
+
+function mobileMonthPicker(which) {
+  const value = state[which];
+  const year = Number(value.slice(0, 4));
+  const month = Number(value.slice(5, 7));
+  const months = Array.from({ length: 12 }, (_, i) => `${year}-${String(i + 1).padStart(2, '0')}`);
+  return h`<div class="mobile-month-picker" role="dialog" aria-label="Choose ${which} month">
+    <div class="mobile-month-picker-head"><button type="button" data-mobile-month-year="-1">‹</button><strong>${year}</strong><button type="button" data-mobile-month-year="1">›</button></div>
+    <div class="mobile-month-grid">${months.map((item, i) => `<button type="button" class="${i + 1 === month ? 'active' : ''}" data-mobile-month-value="${item}">${new Date(year, i, 1).toLocaleDateString('en-AU', { month: 'short' })}</button>`).join('')}</div>
   </div>`;
 }
 
@@ -396,8 +417,15 @@ function wireMobileReport(root, active, rerender, exportAction) {
   root.querySelectorAll('[data-mobile-preset]').forEach(button => {
     button.onclick = () => { applyPreset(button.dataset.mobilePreset); rerender(); };
   });
-  root.querySelector('#mobile-from-month')?.addEventListener('change', event => { state.from = event.target.value; state.preset = 'Custom'; rerender(); });
-  root.querySelector('#mobile-to-month')?.addEventListener('change', event => { state.to = event.target.value; state.preset = 'Custom'; rerender(); });
+  root.querySelectorAll('[data-mobile-month-open]').forEach(button => {
+    button.onclick = () => { state.mobileMonthPicker = button.dataset.mobileMonthOpen; rerender(); };
+  });
+  root.querySelectorAll('[data-mobile-month-year]').forEach(button => {
+    button.onclick = () => { const which = state.mobileMonthPicker; state[which] = addMonths(state[which], Number(button.dataset.mobileMonthYear) * 12); rerender(); };
+  });
+  root.querySelectorAll('[data-mobile-month-value]').forEach(button => {
+    button.onclick = () => { const which = state.mobileMonthPicker; state[which] = button.dataset.mobileMonthValue; state.preset = 'Custom'; state.mobileMonthPicker = null; rerender(); };
+  });
   root.querySelectorAll('[data-mobile-all]').forEach(button => {
     button.onclick = () => { const kind = button.dataset.mobileAll; setFilterList(kind, kind === 'accounts' ? (state.accountIds ? null : []) : (state.categoryIds ? null : [])); rerender(); };
   });

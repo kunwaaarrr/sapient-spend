@@ -9,6 +9,7 @@ import * as loansView from './views/loans.js';
 import * as settingsView from './views/settings.js';
 import * as fiftyView from './views/fifty.js';
 import * as forecastView from './views/forecast.js';
+import * as profileView from './views/profile.js';
 
 // ---------- modal ----------
 const modalRoot = document.getElementById('modal-root');
@@ -55,12 +56,16 @@ applyDisplaySettings(); // before first paint, so the shell doesn't flash the wr
 
 // ---------- router ----------
 const viewEl = document.getElementById('view');
+let lastRenderedHash = null;
 export function navigate(hash) { location.hash = hash; }
 function currentRoute() {
   const parts = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean);
   return { name: parts[0] || 'budget', params: parts.slice(1) };
 }
 function renderView() {
+  const routeKey = location.hash || '#/budget';
+  const keepScroll = routeKey === lastRenderedHash;
+  const previousScrollTop = viewEl.scrollTop;
   const r = currentRoute();
   applyDisplaySettings();
   setHideAmounts(store.state.settings.hideAmounts);
@@ -80,10 +85,18 @@ function renderView() {
     fifty:    () => fiftyView.render(viewEl, { month: r.params[0] || thisMonth() }),
     forecast: () => forecastView.render(viewEl, { variant: 'classic' }),
     'what-if-v2': () => forecastView.render(viewEl, { variant: 'v2' }),
+    profile:  () => profileView.render(viewEl),
   };
   (table[r.name] || table.budget)();
   renderSidebar(r);
   renderTabbar(r);
+  lastRenderedHash = routeKey;
+  if (keepScroll) {
+    viewEl.scrollTop = previousScrollTop;
+    requestAnimationFrame(() => { viewEl.scrollTop = previousScrollTop; });
+  } else {
+    viewEl.scrollTop = 0;
+  }
 }
 window.addEventListener('hashchange', renderView);
 
@@ -134,7 +147,7 @@ function renderTabbar(route) {
   const map = {
     budget: 'plan',
     spending: 'spending',
-    account: 'accounts', accounts: 'accounts', 'loan-account': 'accounts',
+    profile: 'profile', account: 'profile', accounts: 'profile', 'loan-account': 'profile', settings: 'profile',
     reports: 'reflect', fifty: 'reflect', forecast: 'reflect', 'what-if-v2': 'reflect', loans: 'reflect',
   };
   document.querySelectorAll('#tabbar button').forEach(b =>
@@ -148,12 +161,24 @@ document.getElementById('tabbar').onclick = e => {
   const go = {
     plan: `#/budget/${thisMonth()}`,
     spending: '#/spending',
-    accounts: '#/accounts',
+    profile: '#/profile',
     reflect: '#/reports/overview',
   };
   navigate(go[btn.dataset.tab]);
 };
 document.getElementById('mobile-transaction-btn').onclick = () => registerView.openAddTransactionModal();
+
+// Any in-view button can update state and synchronously rebuild its view. Keep the reader at the
+// same vertical position for those same-page interactions; actual link/hash navigation still starts
+// the destination at the top through renderView().
+document.addEventListener('click', event => {
+  if (!event.target.closest('#view button')) return;
+  const top = viewEl.scrollTop;
+  queueMicrotask(() => {
+    viewEl.scrollTop = top;
+    requestAnimationFrame(() => { viewEl.scrollTop = top; });
+  });
+}, true);
 
 // collapse the ＋ Transaction pill to a square while scrolling down, expand near the top or scrolling up
 {

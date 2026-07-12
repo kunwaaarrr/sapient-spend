@@ -1,5 +1,5 @@
 // ponytail: simple cache-first offline shell; bump VERSION on deploys
-const VERSION = 'sapientspend-v31';
+const VERSION = 'sapientspend-v33';
 const ASSETS = [
   './', 'index.html', 'manifest.json', 'fonts/figtree-var.woff2',
   'css/app.css', 'css/budget.css',
@@ -8,7 +8,7 @@ const ASSETS = [
   'js/app.js', 'js/util.js', 'js/store.js', 'js/seed.js',
   'js/lib/fifty.js', 'js/lib/forecast.js', 'js/lib/csv.js', 'js/lib/categorize.js',
   'js/views/budget.js', 'js/views/register.js', 'js/views/reports.js',
-  'js/views/loans.js', 'js/views/settings.js',
+  'js/views/loans.js', 'js/views/settings.js', 'js/views/profile.js',
   'js/views/fifty.js', 'js/views/forecast.js',
 ];
 self.addEventListener('install', e => {

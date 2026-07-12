@@ -47,14 +47,26 @@ export function fmtDate(iso) {
 export function esc(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
-export function h(strings, ...vals) { // tagged template: escapes interpolations; arrays and whole HTML fragments pass raw
-  // ponytail: "<...>" strings pass unescaped so views can nest built fragments; a user naming a payee
-  // literally "<tag>" could inject markup into their own local page — acceptable here, sanitize if this ever syncs
-  const isFragment = v => typeof v === 'string' && /^\s*</.test(v) && />\s*$/.test(v);
-  return strings.reduce((out, s, i) => {
-    const v = vals[i - 1];
-    return out + (Array.isArray(v) ? v.join('') : isFragment(v) ? v : esc(v)) + s;
-  });
+
+// Trusted-HTML brand. `h` returns one; `raw` mints one from a string the caller vouches for
+// (a built SVG/markup fragment). Anything NOT branded is escaped on interpolation, so untrusted
+// data (payee names, memos, imported text) can never inject markup no matter its shape.
+export class Safe extends String {}
+export function raw(html) { return new Safe(String(html ?? '')); }
+
+// tagged template: interpolations are HTML-escaped UNLESS they are Safe (from `h`/`raw`/ICONS) or
+// arrays of such. Default-safe: forgetting to escape a value fails closed (escaped), and forgetting
+// to `raw()` a real fragment fails visibly (renders as text), never silently unsafe.
+function render(v) {
+  if (v == null || v === false || v === true) return '';
+  if (v instanceof Safe) return v.toString();
+  if (Array.isArray(v)) return v.map(render).join('');
+  return esc(v);
+}
+export function h(strings, ...vals) {
+  let out = strings[0];
+  for (let i = 0; i < vals.length; i++) out += render(vals[i]) + strings[i + 1];
+  return new Safe(out);
 }
 export function debounce(fn, ms) {
   let t;
@@ -65,12 +77,17 @@ export function uid() {
 }
 
 // Monochrome line icons (currentColor). One family for sidebar + tab bar + toolbars.
-const I = (inner, extra = '') => `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" ${extra}>${inner}</svg>`;
+const I = (inner, extra = '') => raw(`<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" ${extra}>${inner}</svg>`);
 export const ICONS = {
   plan: I('<rect x="3.5" y="4.5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M9.5 9.5v10"/>'),
   spending: I('<rect x="3.5" y="6.2" width="17" height="11.6" rx="2"/><path d="M3.5 10h17M7.2 14h3.2"/>'),
   reflect: I('<path d="M4.5 20h15M7.5 16.5v-6M12 16.5V6.5M16.5 16.5v-3.5"/>'),
   accounts: I('<path d="M12 3.8 20 8.8H4l8-5z"/><path d="M5.5 12v5.5M10 12v5.5M14 12v5.5M18.5 12v5.5M3.8 20.5h16.4"/>'),
+  profile: I('<circle cx="12" cy="8" r="3.7"/><path d="M4.8 20c.7-4.1 3.1-6.2 7.2-6.2s6.5 2.1 7.2 6.2"/>'),
+  tag: I('<path d="M4 5.5h8.2l7.1 7.1-6.7 6.7-7.1-7.1L4 5.5z"/><circle cx="8.3" cy="9.8" r="1"/>'),
+  calendar: I('<rect x="3.5" y="5.5" width="17" height="15" rx="2"/><path d="M7.5 3.5v4M16.5 3.5v4M3.5 10h17"/>'),
+  flag: I('<path d="M5 21V4.5M5 5h10l-1.8 3L15 11H5"/>'),
+  repeat: I('<path d="M17.5 7H7.8a4.8 4.8 0 0 0-4.3 2.7M6.5 4 3 7.5 6.5 11M6.5 17h9.7a4.8 4.8 0 0 0 4.3-2.7M17.5 20l3.5-3.5-3.5-3.5"/>'),
   loans: I('<rect x="5.5" y="3.5" width="13" height="17" rx="2"/><path d="M8.5 7h7"/><g fill="currentColor" stroke="none"><circle cx="8.7" cy="11" r=".95"/><circle cx="12" cy="11" r=".95"/><circle cx="15.3" cy="11" r=".95"/><circle cx="8.7" cy="14.5" r=".95"/><circle cx="12" cy="14.5" r=".95"/><circle cx="15.3" cy="14.5" r=".95"/><circle cx="8.7" cy="18" r=".95"/><circle cx="12" cy="18" r=".95"/></g>'),
   settings: I('<circle cx="12" cy="12" r="3.2"/><path d="M12 2.9v2.6M12 18.5v2.6M2.9 12h2.6M18.5 12h2.6M5.6 5.6l1.9 1.9M16.5 16.5l1.9 1.9M18.4 5.6l-1.9 1.9M7.5 16.5l-1.9 1.9"/>'),
   eye: I('<path d="M2.8 12S6.5 5.8 12 5.8 21.2 12 21.2 12 17.5 18.2 12 18.2 2.8 12 2.8 12z"/><circle cx="12" cy="12" r="2.6"/>'),
