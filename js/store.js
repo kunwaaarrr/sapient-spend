@@ -6,12 +6,6 @@ export const INFLOW = 'inflow';
 const KEY = 'kanevo/v1';
 const hasLS = typeof localStorage !== 'undefined';
 
-// one-time migration: adopt data saved under the pre-rebrand SapientSpend key
-if (hasLS && localStorage.getItem(KEY) == null) {
-  const legacy = localStorage.getItem('sapientspend/v1');
-  if (legacy != null) { localStorage.setItem(KEY, legacy); localStorage.removeItem('sapientspend/v1'); }
-}
-
 const CASH_TYPES = new Set(['checking', 'savings', 'cash']);
 const ONBUDGET_TYPES = new Set(['checking', 'savings', 'cash', 'creditCard']);
 
