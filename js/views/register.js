@@ -1584,8 +1584,8 @@ function renderMobileRow(t, { spending = false } = {}) {
       </div>
     </div>
     ${!t.approved ? h`<div class="mobile-row-approve-actions">
-      <button type="button" class="btn green sm" data-approve="${t.id}">✓ Approve</button>
-      <button type="button" class="btn danger sm" data-reject="${t.id}">✕ Reject</button>
+      <button type="button" class="mobile-approve-btn" data-approve="${t.id}">✓ Approve</button>
+      <button type="button" class="mobile-reject-btn" data-reject="${t.id}">Reject</button>
     </div>` : ''}
   </div>`;
 }

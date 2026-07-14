@@ -293,9 +293,19 @@
 .mobile-row-account { max-width: 120px; margin-top: 7px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-dim); font-size: 11px; line-height: 1.1; }
 
 /* mobile approve/reject row — desktop's ✓/✗ approve-actions column has no mobile equivalent, so
-   unapproved rows get a full-width action row here, reusing the app's existing .btn green/danger look. */
-.mobile-row-approve-actions { display: flex; gap: 8px; margin-top: 9px; }
-.mobile-row-approve-actions .btn { flex: 1; min-height: 44px; height: auto; }
+   unapproved rows get an action row here. Styled to the app's pill language (soft tinted pills,
+   rounded like the Available/RTA pills) rather than loud solid button blocks. */
+.mobile-row-approve-actions { display: flex; gap: 8px; margin-top: 10px; }
+.mobile-row-approve-actions button {
+  flex: 1; min-height: 42px; border: 0; border-radius: 999px; cursor: pointer;
+  font-size: 13px; font-weight: 700; letter-spacing: .01em;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  -webkit-tap-highlight-color: transparent; transition: background .12s, color .12s;
+}
+.mobile-approve-btn { background: var(--pill-pos-bg); color: var(--green-dark); }
+.mobile-approve-btn:active { background: var(--green); color: #fff; }
+.mobile-reject-btn { background: var(--track); color: var(--text-dim); }
+.mobile-reject-btn:active { background: var(--pill-neg-bg); color: var(--red-dark); }
 
 /* compact rows (mobile "Compact rows" option) — ~30% shorter cards */
 .reg-mobile-list.compact .mobile-date-head { padding: 6px 12px 2px; font-size: 10px; }
