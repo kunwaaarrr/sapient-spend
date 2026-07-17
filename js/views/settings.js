@@ -85,10 +85,10 @@ export function render(root, params) {
             </label>
             </div>
           </div>
-          <div class="settings-option-block">
+          ${theme === 'dark' && balance === 'default' ? h`<div class="settings-option-block">
             <div class="settings-option-head"><span class="settings-row-icon settings-row-icon-text" aria-hidden="true">Aa</span><span><strong>Amount style</strong><small>How amounts and bars look in dark mode</small></span></div>
-            <small>Solid</small>
-            <div class="settings-choice-grid">
+            <div class="amt-arrow" aria-hidden="true"><span></span></div>
+            <div class="settings-choice-grid amt-grid">
             <label class="settings-choice">
               <input type="radio" name="disp-amount-style" value="velvet" ${amountStyle === 'velvet' ? 'checked' : ''}>
               <span class="disp-radio-body">
@@ -111,9 +111,6 @@ export function render(root, params) {
                 <span class="disp-radio-title">Bright</span>
               </span>
             </label>
-            </div>
-            <small>Subtle</small>
-            <div class="settings-choice-grid">
             <label class="settings-choice">
               <input type="radio" name="disp-amount-style" value="soft" ${amountStyle === 'soft' ? 'checked' : ''}>
               <span class="disp-radio-body">
@@ -137,7 +134,7 @@ export function render(root, params) {
               </span>
             </label>
             </div>
-          </div>
+          </div>` : ''}
         </section>
 
         <section class="settings-card">
