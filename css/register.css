@@ -529,21 +529,24 @@
 .pending-nudge p { font-size: 12px; line-height: 1.45; }
 .pending-nudge button { margin-top: 8px; height: 32px; padding: 0 12px; border-radius: 999px; background: var(--bg); color: var(--blue-dark); font-size: 12px; font-weight: 700; }
 .pending-nudge button:active { background: var(--bg-alt); }
-.pending-list { display: flex; flex-direction: column; gap: 9px; }
+/* isolate: the deck layers are z-index:-1 — without a stacking context boundary here they'd
+   paint behind the view's opaque cream background and vanish entirely */
+.pending-list { display: flex; flex-direction: column; gap: 9px; isolation: isolate; }
 /* NOTE: no z-index on .pending-card — the card must not create a stacking context, or the
    negative-z deck layers below would paint ON TOP of its own background (CSS paint order). */
 .pending-card { position: relative; padding: 12px 13px; border-radius: 18px; background: var(--bg); box-shadow: 0 2px 8px rgba(20,30,70,.04); }
 /* stacked-deck look for a group with >1 member: two white layers fan out behind the card,
    angled toward the right edge. Tapping anywhere but a button expands the card into its
    member rows (wired in wirePendingSection). */
-.pending-card.stacked { cursor: pointer; margin-right: 18px; margin-bottom: 6px; } /* room for the fanned layers to peek */
+.pending-card.stacked { cursor: pointer; margin-right: 18px; margin-bottom: 14px; } /* room for the deck to peek below-right */
+/* two card edges peeking out from under the bottom-right, fanned toward the right edge */
 .pending-card.stacked::before, .pending-card.stacked::after {
-  content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
-  background: var(--bg); border: 1px solid var(--line); box-shadow: 0 3px 10px rgba(20,30,70,.10);
-  transform-origin: left center; /* pivot at the left so the fan swings out to the right */
+  content: ''; position: absolute; z-index: -1; height: 34px;
+  background: var(--bg); border: 1px solid var(--line); border-radius: 14px;
+  box-shadow: 0 3px 8px rgba(20,30,70,.12);
 }
-.pending-card.stacked::before { transform: translate(9px, 0) rotate(1.5deg); }
-.pending-card.stacked::after { transform: translate(18px, 0) rotate(3deg); }
+.pending-card.stacked::before { left: 14px; right: -8px; bottom: -8px; transform: rotate(1.6deg); }
+.pending-card.stacked::after { left: 30px; right: -16px; bottom: -15px; transform: rotate(3.2deg); }
 .pending-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .pending-card-info { min-width: 0; }
 .pending-card-payee { font-weight: 700; font-size: 14.5px; }
