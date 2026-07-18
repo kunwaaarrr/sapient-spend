@@ -114,6 +114,7 @@ function renderView() {
     spending: () => innerWidth < 768
       ? registerView.renderSpendingOverview(viewEl)
       : registerView.render(viewEl, { accountId: null }),
+    review:   () => registerView.renderReview(viewEl),
     account:  () => registerView.render(viewEl, { accountId: r.params[0] }),
     reports:  () => reportsView.render(viewEl, { report: r.params[0] || 'spending' }),
     loans:    () => loansView.render(viewEl, { accountId: r.params[0] || null }),
@@ -144,7 +145,7 @@ function renderSidebar(route) {
   const items = [
     { hash: `#/budget/${month}`, ico: ICONS.plan, label: 'Plan', active: route.name === 'budget' },
     { hash: '#/reports/overview', ico: ICONS.reflect, label: 'Reflect', active: ['reports', 'fifty', 'forecast', 'what-if-v2', 'loans'].includes(route.name) },
-    { hash: '#/accounts', ico: ICONS.accounts, label: 'All Accounts', active: route.name === 'accounts' || route.name === 'spending' },
+    { hash: '#/accounts', ico: ICONS.accounts, label: 'All Accounts', active: route.name === 'accounts' || route.name === 'spending' || route.name === 'review' },
     { hash: '#/settings', ico: ICONS.settings, label: 'Settings', active: route.name === 'settings' },
   ];
   nav.innerHTML = items.map(i =>
@@ -185,7 +186,7 @@ document.getElementById('bank-connections-btn').onclick = () => {
 function renderTabbar(route) {
   const map = {
     budget: 'plan',
-    spending: 'spending',
+    spending: 'spending', review: 'spending',
     profile: 'profile', account: 'profile', accounts: 'profile', 'loan-account': 'profile', settings: 'profile',
     reports: 'reflect', fifty: 'reflect', forecast: 'reflect', 'what-if-v2': 'reflect', loans: 'reflect',
   };

@@ -3,6 +3,7 @@ import { openModal, closeModal, toast, navigate, confirmSheet } from '../app.js'
 import { fmt, fmtExact, parseAmount, todayISO, fmtDate, h, esc, raw, debounce, addMonths, ICONS } from '../util.js';
 import { simulateBankFeed } from '../seed.js';
 import { parseStatement, buildTxns } from '../lib/csv.js';
+import { normalizeMerchant } from '../lib/categorize.js';
 
 const FLAGS = ['red', 'orange', 'yellow', 'green', 'blue', 'purple'];
 const FREQ_LABEL = {
@@ -204,7 +205,9 @@ export function renderSpendingOverview(root) {
       <input id="spending-search-input" type="search" placeholder="Search transactions" value="${spendingQuery}">
       <button id="spending-search-close" aria-label="Close search">${ICONS.close}</button>
     </div>` : ''}
-    ${renderPendingSection(pending, { showAccount: true })}
+    ${pending.length ? h`<button class="mobile-account-approval spending-review-banner" id="spending-review-banner">
+      <span><strong>${pending.reduce((sum, g) => sum + g.count, 0)}</strong> to review — ${pendingPreview(pending)}</span><span aria-hidden="true">›</span>
+    </button>` : ''}
     ${scheduled.length ? h`<button class="spending-scheduled-link ${spendingScheduledOpen ? 'active' : ''}" id="spending-scheduled-toggle">
       <span><i aria-hidden="true">${ICONS.clock}</i> Upcoming scheduled</span>
       <span><strong>${scheduled.length}</strong><b class="spending-scheduled-chevron ${spendingScheduledOpen ? 'open' : ''}" aria-hidden="true">${ICONS.chevronDown}</b></span>
@@ -249,7 +252,7 @@ export function renderSpendingOverview(root) {
     };
   });
   wireMobileApproveEdit(root, null, () => renderSpendingOverview(root));
-  wirePendingSection(root, null, pending, () => renderSpendingOverview(root));
+  root.querySelector('#spending-review-banner')?.addEventListener('click', () => { location.hash = '#/review'; });
   wireScheduled(root, null, () => renderSpendingOverview(root));
 }
 
@@ -290,6 +293,31 @@ function openSpendingMore(root) {
   modal.querySelector('#spending-more-scheduled').onclick = () => { closeModal(); spendingScheduledOpen = !spendingScheduledOpen; renderSpendingOverview(root); };
   modal.querySelector('#spending-more-add').onclick = () => { closeModal(); openAddTransactionModal(); };
   modal.querySelector('#spending-more-settings').onclick = () => { closeModal(); navigate('#/settings'); };
+}
+
+// ---------- cross-account pending review (#/review) ----------
+// "Woolworths ×6 · Shell ×2 · 3 more" — top two groups by count, ×N only for repeats
+function pendingPreview(groups) {
+  const top = groups.slice(0, 2).map(g => g.count > 1 ? `${g.payeeName} ×${g.count}` : g.payeeName).join(' · ');
+  const more = groups.length - 2;
+  return more > 0 ? `${top} · ${more} more` : top;
+}
+
+export function renderReview(root) {
+  const pending = store.pendingGroups(null);
+  root.innerHTML = h`<div class="spending-overview">
+    <header class="settings-overview-head mobile-page-head">
+      <button id="review-back" class="settings-back mobile-head-action" aria-label="Back">‹</button>
+      <h1 class="mobile-page-title">Review</h1>
+      <span class="settings-head-spacer" aria-hidden="true"></span>
+    </header>
+    ${pending.length ? renderPendingSection(pending, { showAccount: true }) : h`<div class="spending-empty">
+      <p>All caught up — nothing to review.</p>
+      <a class="link-btn" href="#/spending" style="margin-top:10px">Back to Spending</a>
+    </div>`}
+  </div>`;
+  root.querySelector('#review-back').onclick = () => history.back();
+  wirePendingSection(root, null, pending, () => renderReview(root));
 }
 
 // ---------- main render ----------
@@ -1579,7 +1607,7 @@ function renderMobileRow(t, { spending = false, showApproveActions = true } = {}
     <div class="mobile-row-main">
       <div class="mobile-row-left">
         <div class="mobile-payee">${!t.approved ? raw('<span class="unapproved-dot"></span>') : ''}${payeeName}</div>
-        <div class="mobile-sub">${categoryPill}${cat && t.autoCategorized && !t.approved ? raw(' <span class="auto-badge" title="Auto-categorized — approving confirms it">AUTO</span>') : ''}${memo}</div>
+        <div class="mobile-sub">${categoryPill}${cat && t.autoCategorized && !t.approved ? raw(' <span class="suggested-label">✦ suggested</span>') : ''}${memo}</div>
       </div>
       <div class="mobile-row-side">
         <div class="mobile-row-right">
@@ -1609,7 +1637,26 @@ function wireMobileList(root, txs, accountId) {
 // inside the transaction editor, opened by Edit — not here).
 function wireMobileApproveEdit(root, accountId, rerender = () => render(root, { accountId })) {
   root.querySelectorAll('[data-approve]').forEach(btn => {
-    btn.onclick = e => { e.stopPropagation(); store.approveTransaction(btn.dataset.approve); rerender(); };
+    btn.onclick = e => {
+      e.stopPropagation();
+      const tx = store.state.transactions.find(t => t.id === btn.dataset.approve);
+      store.approveTransaction(btn.dataset.approve);
+      // "review together" nudge: a one-off approve in the feed, with more still pending from the
+      // same merchant, offers a jump to that group's card in pending review. Not for transfers
+      // or payee-less rows — they don't group by merchant.
+      if (tx && tx.payeeId && !tx.transferAccountId) {
+        const payee = store.getPayee(tx.payeeId);
+        const group = payee && store.pendingGroups(tx.accountId)
+          .find(g => normalizeMerchant(g.payeeName) === normalizeMerchant(payee.name));
+        if (group && group.count >= 1) {
+          toast(`Approved · ${group.count} more from ${payee.name}`, {
+            actionLabel: 'Review together ›',
+            onAction: () => { expandedPendingGroups.add(group.key); location.hash = '#/review'; },
+          });
+        }
+      }
+      rerender();
+    };
   });
   root.querySelectorAll('[data-edit]').forEach(btn => {
     btn.onclick = e => { e.stopPropagation(); openAddTransactionModal(accountId, btn.dataset.edit); };
@@ -1650,16 +1697,19 @@ function renderPendingMembers(g) {
 
 function renderPendingCard(g, { showAccount = false } = {}) {
   const label = pendingCategoryLabel(g);
-  const showAuto = g.categoryId && g.autoCategorized;
+  const needsCategory = g.categoryId == null; // uncategorised or mixed — either way, picking sets all members
+  const suggested = g.categoryId && g.autoCategorized;
   const stacked = g.count > 1;
   const expanded = stacked && expandedPendingGroups.has(g.key);
-  return h`<div class="pending-card ${stacked ? 'stacked' : ''} ${g.count >= 3 ? 'stacked-deep' : ''} ${expanded ? 'expanded' : ''}" data-pending-card="${g.key}">
+  return h`<div class="pending-card ${stacked ? 'stacked' : ''} ${g.count >= 3 ? 'stacked-deep' : ''} ${expanded ? 'expanded' : ''} ${needsCategory ? 'needs-category' : ''}" data-pending-card="${g.key}">
     <div class="pending-card-top">
       <div class="pending-card-info">
         <div class="pending-card-payee">${g.payeeName}</div>
         <div class="pending-card-sub">
-          <button type="button" class="mobile-category-pill ${g.categoryId === INFLOW ? 'inflow' : ''}" data-pill-group="${g.key}">${label}</button>
-          ${showAuto ? raw('<span class="auto-badge" title="Auto-categorized — approving confirms it">AUTO</span>') : ''}
+          ${needsCategory
+            ? h`<button type="button" class="pill-cta" data-pill-group="${g.key}">＋ Choose category</button>`
+            : h`<button type="button" class="mobile-category-pill ${g.categoryId === INFLOW ? 'inflow' : ''}" data-pill-group="${g.key}">${label}</button>`}
+          ${suggested ? raw('<span class="suggested-label">✦ suggested</span>') : ''}
         </div>
       </div>
       <div class="pending-card-amt">

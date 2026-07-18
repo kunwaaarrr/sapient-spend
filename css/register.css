@@ -365,6 +365,12 @@
 }
 .spending-uncleared > span:last-child { font-size: 27px; line-height: 1; color: var(--text-faint); }
 .spending-uncleared.active { background: var(--chip-active-bg); }
+/* pending-review banner reuses .mobile-account-approval; spending view has no gutter of its own */
+.spending-review-banner { margin: 15px 14px 0; width: auto; }
+/* pending-card states: empty category is a call-to-action; guessed categories say so in words */
+.pill-cta { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 999px; border: 1px dashed var(--blue); color: var(--blue-dark); font-size: 11px; font-weight: 700; background: transparent; }
+.pending-card.needs-category { box-shadow: 0 2px 8px rgba(20,30,70,.04), inset 0 0 0 1.5px var(--blue); }
+.suggested-label { font-size: 11px; color: var(--text-dim); white-space: nowrap; }
 .spending-feed { display: flex; flex-direction: column; gap: 14px; padding: 0 14px 64px; }
 .spending-overview .mobile-date-head { padding: 0 3px 6px; font-size: 11px; line-height: 1.3; }
 .spending-overview .mobile-date-card { overflow: hidden; border-radius: 18px; background: var(--bg); box-shadow: 0 2px 8px rgba(20,30,70,.04); }
