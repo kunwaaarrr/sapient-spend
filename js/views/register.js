@@ -820,12 +820,20 @@ export function openFileImportModal(accountId, initialFile) {
   openModal(h`<h2>File Import</h2>
     <div class="form-row"><label>Bank statement (CSV) or plan backup (JSON)</label><input id="fi-file" type="file"></div>
     <div id="fi-csv" hidden>
-      <div class="form-row"><label>Into account</label>
+      ${accounts.length ? h`<div class="form-row"><label>Into account</label>
         <select id="fi-account">${raw(accounts.map(a => `<option value="${a.id}" ${a.id === defaultAcc ? 'selected' : ''}>${esc(a.name)}</option>`).join(''))}</select>
-      </div>
-      <div id="fi-mapping"></div>
-      <div class="form-row"><label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input id="fi-flip" type="checkbox" style="width:auto">Flip signs (statement shows spending as positive)</label></div>
+      </div>` : h`<div class="form-row"><label>Account name</label><input id="fi-acc-name" type="text" value="My account"></div>
+      <div class="form-row"><label>Account type</label>
+        <select id="fi-acc-type"><option value="checking">Checking</option><option value="savings">Savings</option><option value="cash">Cash</option><option value="creditCard">Credit Card</option></select>
+        <div class="muted note-hint">Transactions need an account to live in — we'll create this one for you.</div>
+      </div>`}
       <div id="fi-preview"></div>
+      <details class="fi-advanced">
+        <summary>Advanced</summary>
+        <div class="muted note-hint">Dates or amounts look wrong in the preview? Pick the columns manually.</div>
+        <div id="fi-mapping"></div>
+        <div class="form-row"><label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input id="fi-flip" type="checkbox" style="width:auto">Flip signs (statement shows spending as positive)</label></div>
+      </details>
     </div>
     <div class="modal-actions">
       <button class="btn secondary" id="fi-cancel">Cancel</button>
@@ -856,7 +864,7 @@ export function openFileImportModal(accountId, initialFile) {
           ? h`<table class="fi-preview-table" style="width:100%;font-size:13px;margin:6px 0"><tbody>${raw(txns.slice(0, 5).map(t =>
               `<tr><td>${esc(fmtDate(t.date))}</td><td>${esc(t.payeeName || '—')}</td><td style="text-align:right">${esc(fmtExact(t.amount))}</td></tr>`).join(''))}</tbody></table>
             <p class="muted" style="font-size:13px">${txns.length} transaction${txns.length === 1 ? '' : 's'} ready${skipped ? ` · ${skipped} row${skipped === 1 ? '' : 's'} skipped (no date/amount)` : ''}</p>`
-          : h`<p class="muted" style="font-size:13px">No transactions detected — check the column mapping above.</p>`;
+          : h`<p class="muted" style="font-size:13px">No transactions detected — open Advanced below and pick the columns manually.</p>`;
       };
 
       modal.querySelector('#fi-flip').onchange = () => { if (csv) renderPreview(); };
@@ -884,10 +892,13 @@ export function openFileImportModal(accountId, initialFile) {
         const file = pickedFile;
         if (!file) { toast('Choose a file first'); return; }
         if (csv) {
-          const targetId = modal.querySelector('#fi-account').value;
-          if (!targetId) { toast('Add an account first, then import your statement'); return; }
           const { txns } = buildTxns(csv.rows, csv.columns, { dataStart: csv.dataStart, flip: modal.querySelector('#fi-flip').checked });
           if (!txns.length) { toast('No transactions to import — check the column mapping'); return; }
+          let targetId = modal.querySelector('#fi-account')?.value;
+          if (!targetId) {
+            const name = modal.querySelector('#fi-acc-name').value.trim() || 'My account';
+            targetId = store.addAccount({ name, type: modal.querySelector('#fi-acc-type').value });
+          }
           const { inserted, merged, skipped } = store.importTransactions(targetId, txns);
           closeModal();
           toast(`${inserted} imported${merged ? `, ${merged} matched to existing` : ''}${skipped ? `, ${skipped} already imported` : ''}`);

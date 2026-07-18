@@ -719,3 +719,15 @@
 .txe-panel .cal-cell { width: auto; height: 42px; font-size: 14px; }
 .txe-panel .cal-nav { font-size: 15px; margin-bottom: 10px; }
 .txe-panel .cal-nav button { padding: 6px 12px; font-size: 18px; }
+
+/* file-import Advanced disclosure */
+.fi-advanced { margin: 10px 0 4px; }
+.fi-advanced summary {
+  display: inline-flex; align-items: center; gap: 6px; cursor: pointer; list-style: none;
+  padding: 5px 12px; border: 1px solid var(--line); border-radius: 999px;
+  font-size: 13px; font-weight: 600; color: var(--text-2); background: var(--chip-bg);
+}
+.fi-advanced summary::-webkit-details-marker { display: none; }
+.fi-advanced summary::after { content: '▾'; font-size: 11px; }
+.fi-advanced[open] summary::after { content: '▴'; }
+.fi-advanced > *:not(summary) { margin-top: 8px; }
