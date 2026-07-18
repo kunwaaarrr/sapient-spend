@@ -1635,14 +1635,13 @@ function pendingCategoryLabel(g) {
 // member mini-rows shown when a stacked (count > 1) card is expanded — date, optionally account
 // (cross-account Spending context only; redundant in single-account detail so omitted there), amount,
 // and a per-member Edit that opens the transaction editor for that specific txn.
-function renderPendingMembers(g, showAccount) {
+function renderPendingMembers(g) {
   return h`<div class="pending-card-members">${g.memberIds.map(id => {
     const tx = store.state.transactions.find(t => t.id === id);
     if (!tx) return '';
-    const accName = showAccount ? (store.state.accounts.find(a => a.id === tx.accountId)?.name || '') : '';
     return h`<div class="pending-member-row">
       <span class="pending-member-date">${fmtDate(tx.date)}</span>
-      ${accName ? h`<span class="pending-member-account">${accName}</span>` : ''}
+      ${tx.memo ? h`<span class="pending-member-memo">${tx.memo}</span>` : ''}
       <span class="pending-member-amt ${tx.amount > 0 ? 'pos-text' : 'neg-text'}">${fmt(tx.amount)}</span>
       <button type="button" class="pending-member-edit" data-member-edit="${id}" aria-label="Edit transaction">${ICONS.edit}</button>
     </div>`;
@@ -1664,11 +1663,14 @@ function renderPendingCard(g, { showAccount = false } = {}) {
         </div>
       </div>
       <div class="pending-card-amt">
-        ${g.count > 1 ? h`<span class="pending-card-count">×${g.count}</span>` : ''}
         <span class="${g.totalAmount > 0 ? 'pos-text' : 'neg-text'}">${fmt(g.totalAmount)}</span>
+        ${showAccount || g.count > 1 ? h`<div class="pending-card-meta">
+          ${showAccount ? h`<span class="pending-card-acct">${store.state.accounts.find(a => a.id === g.accountId)?.name || ''}</span>` : ''}
+          ${g.count > 1 ? h`<span class="pending-card-count">×${g.count}</span>` : ''}
+        </div>` : ''}
       </div>
     </div>
-    ${expanded ? renderPendingMembers(g, showAccount) : ''}
+    ${expanded ? renderPendingMembers(g) : ''}
     <div class="pending-card-actions">
       <button type="button" class="pending-approve-btn" data-approve-group="${g.key}">Approve</button>
       <button type="button" class="pending-edit-btn" data-edit-group="${g.key}">${ICONS.edit}<span>Edit</span></button>

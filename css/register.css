@@ -529,25 +529,31 @@
 .pending-nudge button { margin-top: 8px; height: 32px; padding: 0 12px; border-radius: 999px; background: var(--bg); color: var(--blue-dark); font-size: 12px; font-weight: 700; }
 .pending-nudge button:active { background: var(--bg-alt); }
 .pending-list { display: flex; flex-direction: column; gap: 9px; }
-.pending-card { position: relative; z-index: 0; padding: 12px 13px; border-radius: 18px; background: var(--bg); box-shadow: 0 2px 8px rgba(20,30,70,.04); }
-/* stacked-deck look for a group with >1 member: two dimmer layers peek from behind, a few px
-   down/right, hinting there's more underneath. Tapping anywhere but a button expands the card
-   into its member rows (wired in wirePendingSection). */
-.pending-card.stacked { cursor: pointer; }
+/* NOTE: no z-index on .pending-card — the card must not create a stacking context, or the
+   negative-z deck layers below would paint ON TOP of its own background (CSS paint order). */
+.pending-card { position: relative; padding: 12px 13px; border-radius: 18px; background: var(--bg); box-shadow: 0 2px 8px rgba(20,30,70,.04); }
+/* stacked-deck look for a group with >1 member: two white layers fan out behind the card,
+   angled toward the right edge. Tapping anywhere but a button expands the card into its
+   member rows (wired in wirePendingSection). */
+.pending-card.stacked { cursor: pointer; margin-right: 14px; } /* room for the fanned layers to peek */
 .pending-card.stacked::before, .pending-card.stacked::after {
-  content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: var(--track);
+  content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
+  background: var(--bg); border: 1px solid var(--line-subtle); box-shadow: 0 2px 8px rgba(20,30,70,.05);
+  transform-origin: bottom right;
 }
-.pending-card.stacked::before { transform: translate(3px, 3px); }
-.pending-card.stacked::after { transform: translate(6px, 6px); opacity: .65; }
+.pending-card.stacked::before { transform: translate(8px, -2px) rotate(1.8deg); }
+.pending-card.stacked::after { transform: translate(15px, -4px) rotate(3.6deg); }
 .pending-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .pending-card-info { min-width: 0; }
 .pending-card-payee { font-weight: 700; font-size: 14.5px; }
 .pending-card-sub { display: flex; align-items: center; gap: 5px; margin-top: 4px; }
-.pending-card-amt { flex-shrink: 0; display: flex; align-items: center; gap: 6px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.pending-card-amt { flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 3px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.pending-card-meta { display: flex; align-items: center; gap: 6px; }
+.pending-card-acct { font-size: 11px; font-weight: 600; color: var(--text-dim); white-space: nowrap; }
 .pending-card-count { padding: 2px 7px; border-radius: 999px; background: var(--track); color: var(--text-dim); font-size: 11px; font-weight: 700; }
 .pending-card-members { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line-subtle); }
 .pending-member-row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-dim); }
-.pending-member-account { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pending-member-memo { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pending-member-amt { margin-left: auto; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text); }
 .pending-member-edit { flex-shrink: 0; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; color: var(--text-dim); }
 .pending-member-edit:active { background: var(--bg-alt); }

@@ -724,11 +724,12 @@ function pendingGroups(accountId) {
     if ((accountId != null && tx.accountId !== accountId) || tx.approved) continue;
     if (tx.transferAccountId && tx.amount > 0) continue; // incoming leg is the hidden twin — skip so a transfer isn't double-counted
     const payee = tx.payeeId ? getPayee(tx.payeeId) : null;
-    const key = payee ? `p:${normalizeMerchant(payee.name)}` : `tx:${tx.id}`;
+    // key includes the account: same merchant on different accounts = separate approval groups
+    const key = payee ? `${tx.accountId}|p:${normalizeMerchant(payee.name)}` : `${tx.accountId}|tx:${tx.id}`;
     let g = groups.get(key);
     if (!g) {
       g = {
-        key, payeeId: tx.payeeId || null, payeeName: payee ? payee.name : (tx.memo || '(no payee)'),
+        key, accountId: tx.accountId, payeeId: tx.payeeId || null, payeeName: payee ? payee.name : (tx.memo || '(no payee)'),
         count: 0, totalAmount: 0, categoryId: tx.categoryId, allSameCategory: true,
         autoCategorized: true, memberIds: [], sampleDate: tx.date,
       };

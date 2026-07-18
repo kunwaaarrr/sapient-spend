@@ -109,16 +109,20 @@ function payeeId(name) { return store.findOrCreatePayee(name); }
   assert.ok(idx('Coles') < atmIdx, 'tier 1 (AUTO guess) before tier 2 (user-confirmed) despite lower count');
   assert.ok(atmIdx < cashIdx, 'tie within tier 2 broken by payeeName ascending ("ATM" < "Cash Withdrawal")');
 
-  // ---- cross-account: pendingGroups(null) merges across ALL accounts ----
+  // ---- cross-account: pendingGroups(null) scans ALL accounts but keeps groups PER account ----
+  // (same merchant on a different account is a separate approval group — the account is part
+  // of the group key, and each group carries its accountId)
   const allGroups = store.pendingGroups(null);
 
-  // Woolworths has 3 unapproved members on acc + 1 unapproved member on acc2 (added above as the
-  // "different account" exclusion case) — same normalized merchant should merge into one group.
-  const wooliesAll = allGroups.find(g => g.payeeName === 'Woolworths');
-  assert.ok(wooliesAll, 'cross-account Woolworths group exists');
-  assert.equal(wooliesAll.count, 4, 'cross-account Woolworths group merges 3 (acc) + 1 (acc2) members');
-  assert.equal(wooliesAll.totalAmount, -1000 + -2000 + -500 + -111, 'cross-account Woolworths totalAmount summed across accounts');
-  assert.equal(wooliesAll.memberIds.length, 4, 'cross-account Woolworths memberIds complete');
+  const wooliesByAcct = allGroups.filter(g => g.payeeName === 'Woolworths');
+  assert.equal(wooliesByAcct.length, 2, 'same merchant on two accounts -> two separate groups');
+  const wAcc = wooliesByAcct.find(g => g.accountId === acc);
+  const wAcc2 = wooliesByAcct.find(g => g.accountId === acc2);
+  assert.ok(wAcc && wAcc.count === 3, 'acc Woolworths group has its own 3 members');
+  assert.equal(wAcc.totalAmount, -1000 + -2000 + -500, 'acc Woolworths total is per-account');
+  assert.ok(wAcc2 && wAcc2.count === 1 && wAcc2.totalAmount === -111, 'acc2 Woolworths group is separate with its own 1 member');
+  assert.ok(allGroups.every(g => g.memberIds.every(id => store.state.transactions.find(t => t.id === id).accountId === g.accountId)),
+    'every group\'s members all belong to its accountId');
 
   // per-account calls still exclude other accounts — behavior for a given accountId is unchanged
   const acc2Groups = store.pendingGroups(acc2);
