@@ -117,6 +117,15 @@
 .settings-choice .disp-radio-title { font-size: 12px; font-weight: 700; }
 .settings-choice .disp-preview { gap: 4px; }
 .settings-choice .disp-preview .pill { min-width: 0; padding: 2px 5px; font-size: 10px; }
+.amt-grid { margin-left: 0; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.amt-grid .amt-prev { width: 100%; box-sizing: border-box; }
+.amt-grid .amt-prev-row { min-width: 0; }
+.amt-grid .amt-prev-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.amt-grid .amt-prev { padding: 8px 8px; gap: 5px; }
+.amt-grid .amt-prev-pill { font-size: 10.5px; padding: 2px 7px; }
+.amt-grid .amt-prev-pill { flex: 0 0 auto; }
+.amt-arrow { display: flex; justify-content: center; margin: 6px 0 3px; }
+.amt-arrow span { width: 11px; height: 11px; border-right: 2px solid var(--link); border-bottom: 2px solid var(--link); transform: rotate(45deg); border-radius: 1px; }
 .settings-status { padding: 5px 8px; border-radius: 999px; background: var(--track); color: var(--text-2); font-size: 10px; font-weight: 700; }
 .settings-chevron { color: var(--text-faint); font-size: 25px; font-weight: 400; }
 .settings-danger-row .settings-row-icon { background: var(--pill-neg-bg); color: var(--red-dark); }
