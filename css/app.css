@@ -359,7 +359,8 @@ html, body { overflow-x: clip; }
   .profile-hero span:not(.profile-avatar), .profile-hero small { color: var(--text-dim); font-size: 11px; }
   .profile-hero strong { font-size: 18px; }
   .profile-card { overflow: hidden; border-radius: 19px; background: var(--bg); box-shadow: 0 2px 8px rgba(20,30,70,.04); }
-  .profile-row { min-height: 62px; padding: 10px 13px; display: grid; grid-template-columns: 34px minmax(0,1fr) auto; align-items: center; gap: 10px; border-bottom: 1px solid var(--line-subtle); }
+  /* width/text-align so a <button> row (Load test data) matches the <a> rows in the same card */
+  .profile-row { width: 100%; text-align: left; min-height: 62px; padding: 10px 13px; display: grid; grid-template-columns: 34px minmax(0,1fr) auto; align-items: center; gap: 10px; border-bottom: 1px solid var(--line-subtle); }
   .profile-row:last-child { border-bottom: 0; }
   .profile-row:active { background: var(--bg-alt); }
   .profile-row-icon { width: 32px; height: 32px; border-radius: 11px; display: inline-flex; align-items: center; justify-content: center; background: var(--bg-alt); color: var(--text-dim); }

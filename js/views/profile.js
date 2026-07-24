@@ -1,5 +1,7 @@
 import { store } from '../store.js';
 import { fmt, h, ICONS } from '../util.js';
+import { confirmSheet, toast } from '../app.js';
+import { loadTestData } from '../seed.js';
 
 export function render(root) {
   const openAccounts = store.state.accounts.filter(account => !account.closed);
@@ -26,6 +28,22 @@ export function render(root) {
         <a class="profile-row" href="https://github.com/kunwaaarrr/kanevo/issues" target="_blank" rel="noopener"><span class="profile-row-icon">${ICONS.flag}</span><span><strong>Help &amp; feedback</strong><small>Support and feature requests</small></span><b aria-hidden="true">›</b></a>
         <a class="profile-row" href="#/settings/about"><span class="profile-row-icon profile-about-icon">K</span><span><strong>About Kanevo</strong><small>Version, privacy promise and project details</small></span><b aria-hidden="true">›</b></a>
       </section>
+
+      <section class="profile-card">
+        <button class="profile-row" id="profile-test-data"><span class="profile-row-icon">${ICONS.download}</span><span><strong>Load test data</strong><small>Replaces everything with a full sample budget — every review state, card and edge case</small></span><b aria-hidden="true">›</b></button>
+      </section>
     </main>
   </div>`;
+
+  root.querySelector('#profile-test-data').onclick = async () => {
+    if (!await confirmSheet({
+      title: 'Load test data?',
+      body: 'This replaces your current budget with the sample data set. Anything you have entered on this device is lost.',
+      confirmLabel: 'Load test data', danger: true,
+    })) return;
+    loadTestData();
+    toast('Test data loaded');
+    location.hash = '#/spending';
+    location.reload();
+  };
 }

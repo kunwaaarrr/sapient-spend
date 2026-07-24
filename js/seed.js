@@ -362,6 +362,89 @@ function buildDemo() {
   };
 }
 
+// ---------- one-click test fixture (Profile → Load test data) ----------
+// buildDemo() already covers accounts, loans, budget states (green/underfunded/overspent),
+// transfers, scheduled and import-match candidates. This layers on every pending-review state
+// on top of it, so one click shows the lot. Deterministic: same data every time you reload it.
+export function loadTestData() {
+  rnd = mulberry32(0x5A9E71);
+  const s = buildDemo();
+  const acc = name => s.accounts.find(a => a.name === name).id;
+  const cat = frag => s.categories.find(c => c.name.includes(frag)).id;
+  const payee = (name, lastCategoryId = null) => {
+    const p = { id: uid(), name, lastCategoryId, lat: null, lng: null };
+    s.payees.push(p); return p.id;
+  };
+  const tx = o => {
+    s.transactions.push({
+      id: o.id || uid(), accountId: o.accountId, date: o.date, payeeId: o.payeeId || null,
+      categoryId: o.categoryId ?? null, memo: o.memo || '', amount: o.amount,
+      cleared: o.cleared || 'cleared', approved: false, flag: o.flag || null,
+      transferAccountId: o.transferAccountId || null, transferTxId: o.transferTxId || null,
+      importId: o.importId || 'test-' + uid(), attachments: [], subtransactions: o.subtransactions || null,
+      ...(o.autoCategorized ? { autoCategorized: true } : {}),
+    });
+    return s.transactions.at(-1).id;
+  };
+
+  const checking = acc('Everyday Checking'), visa = acc('Visa Credit Card'), savings = acc('Savings');
+  const groceries = cat('Groceries'), dining = cat('Dining Out'), transport = cat('Transport'),
+        subs = cat('Subscriptions'), coffee = cat('Coffee');
+  let day = 1;
+  const nextDate = () => `2026-07-${String(((day++ % 27) + 1)).padStart(2, '0')}`;
+
+  // each entry becomes one pending group; `n` drives the card's deck depth (1 flat, 2 one layer, 3+ two)
+  const CASES = [
+    // uncategorised -> "＋ Choose category" CTA, flat card
+    { name: 'Kmart', n: 1, acct: checking },
+    // uncategorised x2 -> CTA + single deck layer
+    { name: 'Bunnings Warehouse', n: 2, acct: checking, memos: ['screws', ''] },
+    // auto-categorised guess -> "✦ suggested", two deck layers, mixed memos in the expanded rows
+    { name: 'Aldi', n: 3, acct: checking, cat: groceries, auto: true, memos: ['top-up shop', '', 'late night'] },
+    // user-confirmed category -> quiet pill, sorts last (tier 2)
+    { name: 'Coles Express', n: 2, acct: checking, cat: transport },
+    // inflow -> green "Ready to Assign" pill
+    { name: 'Side Gig Pty Ltd', n: 1, acct: checking, cat: 'inflow', amount: 42000 },
+    // same merchant, two accounts -> two separate groups (grouping is per account)
+    { name: 'Spotify', n: 1, acct: checking, cat: subs, auto: true },
+    { name: 'Spotify', n: 2, acct: visa, cat: subs, auto: true },
+    // bank-feed noise: two payee records that normalise to the same merchant -> ONE group of 4
+    { name: 'WOOLWORTHS 1234 SYDNEY', n: 2, acct: checking, cat: groceries, auto: true, key: 'w1' },
+    { name: 'WOOLWORTHS 5678 NEWTOWN', n: 2, acct: checking, cat: groceries, auto: true, key: 'w2' },
+  ];
+  for (const c of CASES) {
+    const pid = payee(c.name);
+    for (let i = 0; i < c.n; i++) {
+      tx({
+        accountId: c.acct, date: nextDate(), payeeId: pid, categoryId: c.cat ?? null,
+        amount: c.amount ?? -(1200 + i * 1730), autoCategorized: c.auto, memo: c.memos?.[i] || '',
+      });
+    }
+  }
+
+  // mixed categories inside one merchant -> group shows the CTA (nothing agreed on yet)
+  const pUber = payee('Uber Eats');
+  for (const cid of [dining, coffee, dining]) tx({ accountId: checking, date: nextDate(), payeeId: pUber, categoryId: cid, amount: -2450, autoCategorized: true });
+
+  // split transaction -> "Split" pill instead of a category
+  tx({ accountId: checking, date: nextDate(), payeeId: payee('Costco'), amount: -18400, memo: 'split shop',
+       subtransactions: [{ categoryId: groceries, amount: -12400 }, { categoryId: dining, amount: -6000 }] });
+
+  // flagged + uncleared row (badge/state coverage in the feed)
+  tx({ accountId: checking, date: nextDate(), payeeId: payee('Dentist'), categoryId: cat('Medical'), amount: -19000, flag: 'red', cleared: 'uncleared', memo: 'check-up' });
+
+  // pending transfer: only the OUTGOING leg may appear in review — the incoming twin is skipped
+  const outId = uid(), inId = uid();
+  tx({ id: outId, accountId: checking, date: nextDate(), amount: -50000, transferAccountId: savings, transferTxId: inId, memo: 'to savings' });
+  tx({ id: inId, accountId: savings, date: nextDate(), amount: 50000, transferAccountId: checking, transferTxId: outId });
+
+  // learned merchants: rules the Learned merchants sheet should list (and Auto-sort can apply)
+  payee('Chemist Warehouse', cat('Medical'));
+  payee('Officeworks', cat('Home Maintenance'));
+
+  store.importJSON(JSON.stringify(s));
+}
+
 export function maybeSeed() {
   if (!store.isFirstRun) return false;
   rnd = mulberry32(0x5A9E71); // reset PRNG for determinism

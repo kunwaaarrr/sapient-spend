@@ -1088,7 +1088,9 @@ export const store = {
   isFirstRun,
   updateSettings: mutate(patch => { Object.assign(state.settings, patch); }),
   exportJSON() { return JSON.stringify(state, null, 2); },
-  importJSON: mutate(text => { state = sanitizeImport(text); }),
+  // persistNow, not the debounced persist: callers replace the whole state and often reload
+  // straight after, which would race the 300ms debounce and lose the import (same as resetAll).
+  importJSON: mutate(text => { state = sanitizeImport(text); persistNow(); }),
   sanitizeImport, // exported for tests
   resetAll: mutate(() => { state = emptyState(); persistNow(); }),
 };
