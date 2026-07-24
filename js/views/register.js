@@ -4,6 +4,7 @@ import { fmt, fmtExact, parseAmount, todayISO, fmtDate, h, esc, raw, debounce, a
 import { simulateBankFeed } from '../seed.js';
 import { parseStatement, buildTxns } from '../lib/csv.js';
 import { normalizeMerchant } from '../lib/categorize.js';
+import { openLearnedMerchantsSheet } from './budget.js';
 
 const FLAGS = ['red', 'orange', 'yellow', 'green', 'blue', 'purple'];
 const FREQ_LABEL = {
@@ -286,12 +287,14 @@ function openSpendingMore(root) {
       <button class="mobile-options-row" id="spending-more-filter"><span class="mobile-options-row-main"><span class="mobile-options-icon" aria-hidden="true">${ICONS.filter}</span>${spendingOnlyUncleared ? 'Show all transactions' : 'Show uncleared only'}</span></button>
       <button class="mobile-options-row" id="spending-more-scheduled"><span class="mobile-options-row-main"><span class="mobile-options-icon" aria-hidden="true">${ICONS.clock}</span>${spendingScheduledOpen ? 'Hide scheduled transactions' : 'Scheduled transactions'}</span></button>
       <button class="mobile-options-row" id="spending-more-add"><span class="mobile-options-row-main"><span class="mobile-options-icon" aria-hidden="true">${ICONS.addCircle}</span>Add a transaction</span></button>
+      <button class="mobile-options-row" id="spending-more-learned"><span class="mobile-options-row-main"><span class="mobile-options-icon" aria-hidden="true">${ICONS.tag}</span>Learned merchants</span><span aria-hidden="true">›</span></button>
       <button class="mobile-options-row" id="spending-more-settings"><span class="mobile-options-row-main"><span class="mobile-options-icon" aria-hidden="true">${ICONS.settings}</span>Settings &amp; privacy</span><span aria-hidden="true">›</span></button>
     </div>`);
   modal.classList.add('mobile-options-modal');
   modal.querySelector('#spending-more-filter').onclick = () => { closeModal(); spendingOnlyUncleared = !spendingOnlyUncleared; renderSpendingOverview(root); };
   modal.querySelector('#spending-more-scheduled').onclick = () => { closeModal(); spendingScheduledOpen = !spendingScheduledOpen; renderSpendingOverview(root); };
   modal.querySelector('#spending-more-add').onclick = () => { closeModal(); openAddTransactionModal(); };
+  modal.querySelector('#spending-more-learned').onclick = () => { closeModal(); openLearnedMerchantsSheet(); };
   modal.querySelector('#spending-more-settings').onclick = () => { closeModal(); navigate('#/settings'); };
 }
 
@@ -849,14 +852,24 @@ export function openFileImportModal(accountId, initialFile) {
   const accounts = store.state.accounts.filter(a => !a.closed);
   const defaultAcc = accountId || accounts[0]?.id;
   openModal(h`<h2>File Import</h2>
-    <div class="form-row"><label>Bank statement (CSV) or plan backup (JSON)</label><input id="fi-file" type="file"></div>
+    <div class="form-row"><label>Bank statement (CSV) or plan backup (JSON)</label>
+      <label class="btn secondary file-btn fi-file-btn"><span aria-hidden="true">↑</span><span id="fi-filename">Choose file…</span><input id="fi-file" type="file" hidden></label>
+    </div>
     <div id="fi-csv" hidden>
-      <div class="form-row"><label>Into account</label>
+      ${accounts.length ? h`<div class="form-row"><label>Into account</label>
         <select id="fi-account">${raw(accounts.map(a => `<option value="${a.id}" ${a.id === defaultAcc ? 'selected' : ''}>${esc(a.name)}</option>`).join(''))}</select>
-      </div>
-      <div id="fi-mapping"></div>
-      <div class="form-row"><label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input id="fi-flip" type="checkbox" style="width:auto">Flip signs (statement shows spending as positive)</label></div>
+      </div>` : h`<div class="form-row"><label>Account name</label><input id="fi-acc-name" type="text" value="My account"></div>
+      <div class="form-row"><label>Account type</label>
+        <select id="fi-acc-type"><option value="checking">Checking</option><option value="savings">Savings</option><option value="cash">Cash</option><option value="creditCard">Credit Card</option></select>
+        <div class="muted note-hint">Transactions need an account to live in — we'll create this one for you.</div>
+      </div>`}
       <div id="fi-preview"></div>
+      <details class="fi-advanced">
+        <summary>Advanced</summary>
+        <div class="muted note-hint">Dates or amounts look wrong in the preview? Pick the columns manually.</div>
+        <div id="fi-mapping"></div>
+        <div class="form-row"><label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input id="fi-flip" type="checkbox" style="width:auto">Flip signs (statement shows spending as positive)</label></div>
+      </details>
     </div>
     <div class="modal-actions">
       <button class="btn secondary" id="fi-cancel">Cancel</button>
@@ -887,7 +900,7 @@ export function openFileImportModal(accountId, initialFile) {
           ? h`<table class="fi-preview-table" style="width:100%;font-size:13px;margin:6px 0"><tbody>${raw(txns.slice(0, 5).map(t =>
               `<tr><td>${esc(fmtDate(t.date))}</td><td>${esc(t.payeeName || '—')}</td><td style="text-align:right">${esc(fmtExact(t.amount))}</td></tr>`).join(''))}</tbody></table>
             <p class="muted" style="font-size:13px">${txns.length} transaction${txns.length === 1 ? '' : 's'} ready${skipped ? ` · ${skipped} row${skipped === 1 ? '' : 's'} skipped (no date/amount)` : ''}</p>`
-          : h`<p class="muted" style="font-size:13px">No transactions detected — check the column mapping above.</p>`;
+          : h`<p class="muted" style="font-size:13px">No transactions detected — open Advanced below and pick the columns manually.</p>`;
       };
 
       modal.querySelector('#fi-flip').onchange = () => { if (csv) renderPreview(); };
@@ -895,6 +908,7 @@ export function openFileImportModal(accountId, initialFile) {
       // .json = plan backup; anything else (csv, txt, whatever the bank exports) tries the statement parser
       const handleFile = async file => {
         pickedFile = file;
+        modal.querySelector('#fi-filename').textContent = file.name;
         if (/\.json$/i.test(file.name) || file.type === 'application/json') {
           csv = null;
           modal.querySelector('#fi-csv').hidden = true;
@@ -906,19 +920,19 @@ export function openFileImportModal(accountId, initialFile) {
         }
       };
       modal.querySelector('#fi-file').onchange = e => { if (e.target.files[0]) handleFile(e.target.files[0]); };
-      if (initialFile) {
-        try { const dt = new DataTransfer(); dt.items.add(initialFile); modal.querySelector('#fi-file').files = dt.files; } catch { /* cosmetic only */ }
-        handleFile(initialFile);
-      }
+      if (initialFile) handleFile(initialFile);
 
       modal.querySelector('#fi-import').onclick = async () => {
         const file = pickedFile;
         if (!file) { toast('Choose a file first'); return; }
         if (csv) {
-          const targetId = modal.querySelector('#fi-account').value;
-          if (!targetId) { toast('Add an account first, then import your statement'); return; }
           const { txns } = buildTxns(csv.rows, csv.columns, { dataStart: csv.dataStart, flip: modal.querySelector('#fi-flip').checked });
           if (!txns.length) { toast('No transactions to import — check the column mapping'); return; }
+          let targetId = modal.querySelector('#fi-account')?.value;
+          if (!targetId) {
+            const name = modal.querySelector('#fi-acc-name').value.trim() || 'My account';
+            targetId = store.addAccount({ name, type: modal.querySelector('#fi-acc-type').value });
+          }
           const { inserted, merged, skipped } = store.importTransactions(targetId, txns);
           closeModal();
           toast(`${inserted} imported${merged ? `, ${merged} matched to existing` : ''}${skipped ? `, ${skipped} already imported` : ''}`);
